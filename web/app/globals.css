@@ -1,41 +1,123 @@
 @import "tailwindcss";
 
+/* Meteora palette (from meteora.ag): navy surfaces, sun → ember → violet brand gradient */
 :root {
-  --bg: #111113;
-  --card: #18181b;
-  --line: #26262b;
-  --muted: #8b8b93;
-  --accent: #6ef2a8;
-  --warn: #f59e3b;
+  --bg: #0b0b12;
+  --surface: #151520;
+  --surface-2: #1c1c28;
+  --line: #2a2a38;
+  --line-hi: #3a3a4c;
+  --text: #f5f5ff;
+  --muted: #9595b2;
+  --dim: #6c6c89;
+  --sun: #f5bd00;
+  --ember: #f54b00;
+  --violet: #6e45ff;
+  --good: #34d399;
+  --brand: linear-gradient(251.72deg, #f5bd00 -10%, #f54b00 40%, #6e45ff 130%);
 }
 
 @theme inline {
   --color-bg: var(--bg);
-  --color-card: var(--card);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
   --color-line: var(--line);
+  --color-line-hi: var(--line-hi);
+  --color-text: var(--text);
   --color-muted: var(--muted);
-  --color-accent: var(--accent);
-  --color-warn: var(--warn);
-  --font-sans: var(--font-geist-sans);
+  --color-dim: var(--dim);
+  --color-sun: var(--sun);
+  --color-ember: var(--ember);
+  --color-violet: var(--violet);
+  --color-good: var(--good);
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-jakarta);
   --font-mono: var(--font-geist-mono);
 }
 
+html { color-scheme: dark; }
 body {
   background: var(--bg);
-  color: #f4f4f5;
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  color: var(--text);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
+::selection { background: rgba(245, 75, 0, 0.35); }
 
-/* Wallet button in the brand colours */
-.wallet-adapter-button-trigger,
-.wallet-adapter-button {
-  background: var(--accent) !important;
-  color: #0b0b0c !important;
-  height: 40px !important;
-  border-radius: 10px !important;
-  font-family: inherit !important;
-  font-size: 14px !important;
-  font-weight: 600 !important;
-  padding: 0 16px !important;
+/* ---------- ambient background: slow drifting light, no imagery ---------- */
+.aurora { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+.aurora::before {
+  content: ""; position: absolute; inset: 0;
+  background-image: linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 30%, transparent 75%);
 }
-.wallet-adapter-dropdown-list { background: var(--card) !important; }
+.orb { position: absolute; border-radius: 9999px; filter: blur(110px); opacity: .55; will-change: transform; }
+.orb-a { width: 46vw; height: 46vw; left: -12vw; top: -18vw; background: radial-gradient(circle, rgba(245,75,0,.55), transparent 65%); animation: drift-a 26s ease-in-out infinite alternate; }
+.orb-b { width: 42vw; height: 42vw; right: -14vw; top: -6vw; background: radial-gradient(circle, rgba(110,69,255,.55), transparent 65%); animation: drift-b 32s ease-in-out infinite alternate; }
+.orb-c { width: 38vw; height: 38vw; left: 30vw; bottom: -26vw; background: radial-gradient(circle, rgba(110,18,62,.8), transparent 65%); animation: drift-a 38s ease-in-out infinite alternate-reverse; }
+@keyframes drift-a { to { transform: translate3d(8vw, 6vw, 0) scale(1.12); } }
+@keyframes drift-b { to { transform: translate3d(-10vw, 8vw, 0) scale(.92); } }
+
+/* ---------- surfaces ---------- */
+.glass {
+  background: linear-gradient(180deg, rgba(28,28,40,.72), rgba(21,21,32,.72));
+  border: 1px solid var(--line);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 20px 50px -24px rgba(0,0,0,.7);
+}
+/* gradient hairline border, used on hover/focus/highlight */
+.ring-brand {
+  border-color: transparent;
+  background:
+    linear-gradient(180deg, rgba(28,28,40,.92), rgba(21,21,32,.92)) padding-box,
+    var(--brand) border-box;
+}
+.text-brand { background: var(--brand); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.bg-brand { background: var(--brand); }
+
+/* primary button: brand gradient + moving sheen */
+.btn-brand {
+  position: relative; overflow: hidden; isolation: isolate;
+  background: var(--brand); color: #fff;
+  box-shadow: 0 10px 30px -10px rgba(245,75,0,.6), inset 0 1px 0 rgba(255,255,255,.25);
+}
+.btn-brand::after {
+  content: ""; position: absolute; inset: 0; z-index: -1;
+  background: linear-gradient(110deg, transparent 35%, rgba(255,255,255,.28) 50%, transparent 65%);
+  transform: translateX(-120%); transition: transform .7s ease;
+}
+.btn-brand:hover:not(:disabled)::after { transform: translateX(120%); }
+
+.skeleton { background: linear-gradient(90deg, var(--surface) 0%, var(--surface-2) 50%, var(--surface) 100%); background-size: 200% 100%; animation: shimmer 1.4s linear infinite; }
+@keyframes shimmer { to { background-position: -200% 0; } }
+
+.rise { animation: rise .5s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } }
+
+/* number inputs without spinners */
+input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+/* wallet adapter, re-skinned */
+.wallet-adapter-button {
+  background: var(--brand) !important; color: #fff !important;
+  height: 40px !important; border-radius: 12px !important;
+  font-family: inherit !important; font-size: 14px !important; font-weight: 600 !important;
+  padding: 0 16px !important; line-height: 40px !important;
+  box-shadow: 0 8px 24px -10px rgba(245,75,0,.6), inset 0 1px 0 rgba(255,255,255,.25);
+}
+.wallet-adapter-button-start-icon img, .wallet-adapter-button-start-icon { width: 20px !important; height: 20px !important; }
+.wallet-adapter-dropdown-list { background: var(--surface-2) !important; border: 1px solid var(--line) !important; border-radius: 14px !important; font-family: inherit !important; }
+.wallet-adapter-dropdown-list-item { border-radius: 10px !important; font-family: inherit !important; }
+.wallet-adapter-dropdown-list-item:hover { background: var(--line) !important; }
+.wallet-adapter-modal-wrapper { background: var(--surface) !important; border: 1px solid var(--line) !important; border-radius: 20px !important; font-family: inherit !important; }
+.wallet-adapter-modal-title { font-family: var(--font-jakarta) !important; font-weight: 600 !important; }
+.wallet-adapter-modal-list .wallet-adapter-button { background: transparent !important; box-shadow: none !important; border-radius: 12px !important; }
+.wallet-adapter-modal-list .wallet-adapter-button:hover { background: var(--surface-2) !important; }
+.wallet-adapter-modal-overlay { background: rgba(5,5,10,.7) !important; backdrop-filter: blur(6px); }
+
+@media (prefers-reduced-motion: reduce) {
+  .orb, .skeleton, .rise { animation: none !important; }
+  .btn-brand::after { display: none; }
+}

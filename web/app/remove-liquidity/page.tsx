@@ -4,7 +4,7 @@ import { PageTitle } from "@/components/ui";
 export default function RemoveLiquidityPage() {
   return (
     <>
-      <PageTitle title="Remove Liquidity" subtitle="Withdraw your Meteora DAMM v2 positions back to your wallet." />
+      <PageTitle eyebrow="Meteora DAMM v2" title="Remove" accent="Liquidity" subtitle="Withdraw your positions and their swap fees back to your wallet." />
       <RemoveLiquidity />
     </>
   );

@@ -85,19 +85,25 @@ function toCoin(address: string, pair: z.infer<typeof Pair> | undefined, listing
   };
 }
 
-export async function getTrending(limit = 30): Promise<CoinInfo[]> {
+/** Solana listings (top boosts first, then latest profiles); these carry the description and links. */
+async function listings(): Promise<Map<string, z.infer<typeof Listing>>> {
   const [boosts, profiles] = await Promise.all([getJson("/token-boosts/top/v1"), getJson("/token-profiles/latest/v1")]);
-  const listings = new Map<string, z.infer<typeof Listing>>();
+  const out = new Map<string, z.infer<typeof Listing>>();
   for (const item of [...z.array(z.unknown()).parse(boosts), ...z.array(z.unknown()).parse(profiles)]) {
     const l = Listing.safeParse(item);
-    if (l.success && l.data.chainId === "solana" && !listings.has(l.data.tokenAddress)) listings.set(l.data.tokenAddress, l.data);
+    if (l.success && l.data.chainId === "solana" && !out.has(l.data.tokenAddress)) out.set(l.data.tokenAddress, l.data);
   }
-  const addresses = [...listings.keys()].slice(0, limit);
+  return out;
+}
+
+export async function getTrending(limit = 30): Promise<CoinInfo[]> {
+  const listed = await listings();
+  const addresses = [...listed.keys()].slice(0, limit);
   const pairs = await pairsFor(addresses);
-  return addresses.map((a) => toCoin(a, pairs.get(a), listings.get(a))).filter((c): c is CoinInfo => c !== null);
+  return addresses.map((a) => toCoin(a, pairs.get(a), listed.get(a))).filter((c): c is CoinInfo => c !== null);
 }
 
 export async function getCoin(address: string): Promise<CoinInfo | null> {
-  const pairs = await pairsFor([address]);
-  return toCoin(address, pairs.get(address));
+  const [pairs, listed] = await Promise.all([pairsFor([address]), listings().catch(() => new Map<string, z.infer<typeof Listing>>())]);
+  return toCoin(address, pairs.get(address), listed.get(address));
 }

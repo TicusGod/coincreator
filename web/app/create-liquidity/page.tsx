@@ -5,7 +5,7 @@ export default async function CreateLiquidityPage({ searchParams }: PageProps<"/
   const { mint } = await searchParams;
   return (
     <>
-      <PageTitle title="Create Liquidity" subtitle="Open a TOKEN/SOL pool on Meteora DAMM v2. Your coin becomes tradable on Jupiter, DexScreener and every Solana wallet." />
+      <PageTitle eyebrow="Meteora DAMM v2" title="Create" accent="Liquidity" subtitle="Open a TOKEN/SOL pool. Your coin becomes tradable on Jupiter, DexScreener and every Solana wallet." />
       <CreateLiquidityForm initialMint={typeof mint === "string" ? mint : ""} />
     </>
   );

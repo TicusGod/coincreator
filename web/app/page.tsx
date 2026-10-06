@@ -9,8 +9,10 @@ export default async function Home({ searchParams }: PageProps<"/">) {
   return (
     <>
       <PageTitle
-        title={address ? "Copy Coin" : "Create a Solana Coin"}
-        subtitle="Name, symbol, image and supply. Minted to your wallet in one transaction, ready for a Meteora pool."
+        eyebrow={address ? "Copy mode" : "Solana token creator"}
+        title={address ? "Copy this coin" : "Create your"}
+        accent={address ? "in 1 click" : "Solana coin"}
+        subtitle="Name, ticker, image and supply. Minted to your wallet in one transaction, ready for a Meteora pool."
       />
       <CreateCoinForm key={address ?? "new"} copy={address} />
     </>

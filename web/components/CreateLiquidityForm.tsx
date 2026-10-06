@@ -1,15 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PublicKey } from "@solana/web3.js";
+import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
-import { FEE_TIERS, buildCreatePoolTx } from "@/lib/chain/meteora";
+import { FEE_TIERS, buildCreatePoolTx, tokenLabels } from "@/lib/chain/meteora";
 import { FEES, TREASURY, lamportsToSol } from "@/lib/config";
 import { friendlyError, sendAndConfirm, solscanTx } from "@/lib/client/send";
-import { Button, Card, Field, Input, Notice, Toggle } from "@/components/ui";
+import { metadataImage } from "@/lib/client/token-image";
+import { Button, Card, ExternalLink, Field, Input, Notice, Row, Segmented, SolLogo, SuccessPanel, Toggle, TokenAvatar } from "@/components/ui";
 
 const POOL_RENT_ESTIMATE_SOL = 0.03;
+const SOL_RESERVE = 0.05; // keep for fees + rent when pressing Max on SOL
 
 const parseKey = (s: string) => {
   try {
@@ -18,6 +20,49 @@ const parseKey = (s: string) => {
     return null;
   }
 };
+
+interface TokenState {
+  key: string;
+  name: string;
+  symbol: string;
+  image: string | null;
+  balance: string;
+  supply: number;
+  freeze: boolean;
+}
+
+const num = (s: string) => s.replace(/[^\d.]/g, "").replace(/(\..*)\./g, "$1");
+const fmt = (n: number, d = 4) => n.toLocaleString("en-US", { maximumFractionDigits: d });
+
+function AmountRow({ label, value, onChange, token, balance, onMax, onHalf }: {
+  label: string; value: string; onChange: (v: string) => void; token: React.ReactNode; balance?: string; onMax?: () => void; onHalf?: () => void;
+}) {
+  return (
+    <div className="rounded-2xl border border-line bg-bg/60 p-4 transition focus-within:border-ember/60 focus-within:shadow-[0_0_0_4px_rgba(245,75,0,.1)]">
+      <div className="mb-2 flex items-center justify-between text-xs text-muted">
+        <span>{label}</span>
+        {balance !== undefined && (
+          <span className="flex items-center gap-2">
+            <span>Balance: <span className="font-mono text-text">{balance}</span></span>
+            {onHalf && <button type="button" onClick={onHalf} className="rounded-md bg-surface-2 px-1.5 py-0.5 font-semibold text-muted hover:text-text">HALF</button>}
+            {onMax && <button type="button" onClick={onMax} className="rounded-md bg-ember/15 px-1.5 py-0.5 font-semibold text-ember hover:bg-ember/25">MAX</button>}
+          </span>
+        )}
+      </div>
+      <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-2 rounded-xl border border-line bg-surface-2 py-1.5 pl-1.5 pr-3">{token}</div>
+        <input
+          value={value}
+          onChange={(e) => onChange(num(e.target.value))}
+          inputMode="decimal"
+          placeholder="0.00"
+          size={1}
+          className="w-full min-w-0 flex-1 bg-transparent text-right font-display text-2xl font-semibold outline-none placeholder:text-dim"
+        />
+      </div>
+    </div>
+  );
+}
 
 export function CreateLiquidityForm({ initialMint = "" }: { initialMint?: string }) {
   const { connection } = useConnection();
@@ -29,39 +74,65 @@ export function CreateLiquidityForm({ initialMint = "" }: { initialMint?: string
   const [solAmount, setSolAmount] = useState("");
   const [feeBps, setFeeBps] = useState<number>(100);
   const [lock, setLock] = useState(false);
-  const [fetched, setFetched] = useState<{ key: string; ui: string; supply: number } | null>(null);
+  const [token, setToken] = useState<TokenState | null>(null);
+  const [solBal, setSolBal] = useState<{ key: string; sol: number } | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState<{ pool: string; sig: string } | null>(null);
 
   const mintKey = parseKey(mint);
-  const balanceKey = mintKey && wallet.publicKey ? `${mintKey.toBase58()}:${wallet.publicKey.toBase58()}` : "";
-  const balance = fetched && fetched.key === balanceKey ? fetched : null;
+  const owner = wallet.publicKey?.toBase58() ?? "";
+  const tokenKey = mintKey ? `${mintKey.toBase58()}:${owner}` : "";
+  const info = token && token.key === tokenKey ? token : null;
+  const sol = solBal && solBal.key === owner ? solBal.sol : null;
 
+  // Token: metadata, picture, supply, wallet balance.
   useEffect(() => {
-    if (!mintKey || !wallet.publicKey) return;
+    if (!mintKey) return;
     let alive = true;
-    Promise.all([
-      connection.getParsedTokenAccountsByOwner(wallet.publicKey, { mint: mintKey }),
-      connection.getParsedAccountInfo(mintKey),
-    ])
-      .then(([accs, info]) => {
-        if (!alive) return;
-        const ui = accs.value[0]?.account.data.parsed.info.tokenAmount.uiAmountString ?? "0";
-        const parsed = info.value?.data && "parsed" in info.value.data ? info.value.data.parsed.info : null;
-        setFetched({ key: balanceKey, ui, supply: parsed ? Number(parsed.supply) / 10 ** parsed.decimals : 0 });
-      })
-      .catch(() => alive && setFetched(null));
+    (async () => {
+      const [labels, parsed, accs] = await Promise.all([
+        tokenLabels(connection, [mintKey]),
+        connection.getParsedAccountInfo(mintKey),
+        wallet.publicKey ? connection.getParsedTokenAccountsByOwner(wallet.publicKey, { mint: mintKey }) : null,
+      ]);
+      const m = parsed.value?.data && "parsed" in parsed.value.data ? parsed.value.data.parsed.info : null;
+      if (!m) throw new Error("not a mint");
+      const image = await metadataImage(labels[0].uri);
+      if (!alive) return;
+      setToken({
+        key: tokenKey,
+        ...labels[0],
+        image,
+        balance: accs?.value[0]?.account.data.parsed.info.tokenAmount.uiAmountString ?? "0",
+        supply: Number(m.supply) / 10 ** m.decimals,
+        freeze: !!m.freezeAuthority,
+      });
+    })().catch(() => alive && setToken(null));
     return () => {
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [balanceKey, connection]);
+  }, [tokenKey, connection]);
+
+  useEffect(() => {
+    if (!wallet.publicKey) return;
+    let alive = true;
+    const key = wallet.publicKey.toBase58();
+    connection
+      .getBalance(wallet.publicKey)
+      .then((l) => alive && setSolBal({ key, sol: l / LAMPORTS_PER_SOL }))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [wallet.publicKey, connection]);
 
   const t = Number(tokenAmount);
   const s = Number(solAmount);
   const price = t > 0 && s > 0 ? s / t : 0;
-  const mcapSol = balance?.supply && price ? balance.supply * price : 0;
+  const mcapSol = info?.supply && price ? info.supply * price : 0;
+  const share = info?.supply && t > 0 ? Math.min(100, (t / info.supply) * 100) : 0;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -90,89 +161,99 @@ export function CreateLiquidityForm({ initialMint = "" }: { initialMint?: string
 
   if (done) {
     return (
-      <Card className="mx-auto max-w-xl text-center">
-        <div className="mx-auto mb-4 grid h-12 w-12 place-items-center rounded-full bg-accent/15 text-accent">✓</div>
-        <h2 className="text-xl font-semibold">Pool created on Meteora</h2>
-        <p className="mt-2 break-all font-mono text-xs text-muted">{done.pool}</p>
-        <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
-          <a href={`https://dexscreener.com/solana/${done.pool}`} target="_blank" rel="noreferrer">
-            <Button className="w-full">View on DexScreener</Button>
-          </a>
-          <a href={solscanTx(done.sig)} target="_blank" rel="noreferrer" className="inline-flex h-11 items-center justify-center rounded-xl border border-line px-5 text-sm">
-            Transaction
-          </a>
-        </div>
-      </Card>
+      <SuccessPanel title="Pool live on Meteora" address={done.pool}>
+        <a href={`https://dexscreener.com/solana/${done.pool}`} target="_blank" rel="noreferrer" className="sm:col-span-2">
+          <Button size="lg" className="w-full">View on DexScreener</Button>
+        </a>
+        <ExternalLink href={`https://solscan.io/account/${done.pool}`}>Pool</ExternalLink>
+        <ExternalLink href={solscanTx(done.sig)}>Transaction</ExternalLink>
+      </SuccessPanel>
     );
   }
 
+  const symbol = info?.symbol ?? "TOKEN";
+
   return (
-    <form onSubmit={submit} className="mx-auto grid max-w-xl gap-5">
-      <Card className="grid gap-4">
-        <Field label="Token address" hint={balance ? `Wallet balance: ${balance.ui}` : "The coin you created (freeze authority revoked)"}>
-          <Input value={mint} onChange={(e) => setMint(e.target.value)} placeholder="Token mint address" spellCheck={false} />
-        </Field>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Token amount">
-            <div className="relative">
-              <Input value={tokenAmount} onChange={(e) => setTokenAmount(e.target.value.replace(/[^\d.]/g, ""))} inputMode="decimal" placeholder="800000000" />
-              {balance && (
-                <button type="button" onClick={() => setTokenAmount(balance.ui)} className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md bg-accent/15 px-2 py-0.5 text-xs text-accent">
-                  Max
-                </button>
-              )}
-            </div>
-          </Field>
-          <Field label="SOL amount">
-            <Input value={solAmount} onChange={(e) => setSolAmount(e.target.value.replace(/[^\d.]/g, ""))} inputMode="decimal" placeholder="1" />
-          </Field>
-        </div>
-        <Field label="Swap fee" hint="Earned by your position on every trade, paid in SOL">
-          <div className="grid grid-cols-4 gap-2">
-            {FEE_TIERS.map((b) => (
+    <form onSubmit={submit} className="rise mx-auto grid w-full max-w-[520px] grid-cols-[minmax(0,1fr)] gap-4">
+      <Card highlight className="grid grid-cols-[minmax(0,1fr)] gap-4">
+        <Field label="Token address" hint={mintKey && !info ? "Looking up token…" : undefined}>
+          <div className="relative">
+            <Input value={mint} onChange={(e) => setMint(e.target.value.trim())} placeholder="Paste your token mint" spellCheck={false} className="pr-24 font-mono text-sm" />
+            {!mint && (
               <button
                 type="button"
-                key={b}
-                onClick={() => setFeeBps(b)}
-                className={`rounded-xl border py-2 text-sm ${feeBps === b ? "border-accent/60 bg-accent/10 text-accent" : "border-line text-muted"}`}
+                onClick={() => navigator.clipboard?.readText().then((v) => setMint(v.trim())).catch(() => {})}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-lg bg-surface-2 px-2.5 py-1 text-xs font-semibold text-muted hover:text-text"
               >
-                {b / 100}%
+                Paste
               </button>
-            ))}
+            )}
           </div>
         </Field>
-        {price > 0 && (
-          <div className="grid grid-cols-2 gap-3 rounded-xl border border-line bg-bg p-4 text-sm">
-            <div>
-              <div className="text-xs text-muted">Starting price</div>
-              <div className="mt-1 font-mono">{price.toPrecision(4)} SOL</div>
-            </div>
-            <div>
-              <div className="text-xs text-muted">Starting market cap</div>
-              <div className="mt-1 font-mono">{mcapSol ? `${mcapSol.toLocaleString(undefined, { maximumFractionDigits: 2 })} SOL` : "—"}</div>
-            </div>
-          </div>
-        )}
-      </Card>
 
-      <Toggle
-        checked={lock}
-        onChange={setLock}
-        title="Lock liquidity forever"
-        text="You can never withdraw it; swap fees stay claimable on Meteora. Buyers see the pool cannot be rugged."
-      />
+        {info?.freeze && <Notice tone="error">This token still has a freeze authority. Meteora pools need it revoked.</Notice>}
+
+        <div className="relative grid grid-cols-[minmax(0,1fr)] gap-2">
+          <AmountRow
+            label="Deposit"
+            value={tokenAmount}
+            onChange={setTokenAmount}
+            balance={info ? fmt(Number(info.balance), 2) : undefined}
+            onMax={info ? () => setTokenAmount(info.balance) : undefined}
+            onHalf={info ? () => setTokenAmount(String(Number(info.balance) / 2)) : undefined}
+            token={
+              <>
+                <TokenAvatar src={info?.image} label={symbol} size={26} />
+                <span className="max-w-[90px] truncate text-sm font-semibold">{symbol}</span>
+              </>
+            }
+          />
+          <span className="absolute left-1/2 top-1/2 z-10 grid h-9 w-9 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-xl border-4 border-surface bg-surface-2 text-muted">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
+          </span>
+          <AmountRow
+            label="Pair with"
+            value={solAmount}
+            onChange={setSolAmount}
+            balance={sol !== null ? fmt(sol) : undefined}
+            onMax={sol !== null ? () => setSolAmount(String(Math.max(0, +(sol - SOL_RESERVE - lamportsToSol(FEES.createLiquidity)).toFixed(4)))) : undefined}
+            token={
+              <>
+                <SolLogo size={26} />
+                <span className="text-sm font-semibold">SOL</span>
+              </>
+            }
+          />
+        </div>
+
+        <Field label="Swap fee" hint="Earned by your position on every trade, paid in SOL">
+          <Segmented value={feeBps} onChange={setFeeBps} options={FEE_TIERS.map((b) => ({ value: b, label: `${b / 100}%` }))} />
+        </Field>
+
+        <div className="rounded-2xl border border-line bg-bg/50 px-4 py-3">
+          <Row label="Starting price">{price ? <span className="font-mono">{price.toPrecision(4)} SOL</span> : "—"}</Row>
+          <Row label="Starting market cap">{mcapSol ? <span className="font-mono">{fmt(mcapSol, 2)} SOL</span> : "—"}</Row>
+          <Row label="Supply in pool">{share ? `${fmt(share, 1)}%` : "—"}</Row>
+          <Row label="Pool type">DAMM v2 · full range</Row>
+        </div>
+
+        <Toggle
+          checked={lock}
+          onChange={setLock}
+          title="Lock liquidity forever"
+          text="You can never withdraw it; swap fees stay claimable on Meteora. Buyers see the pool cannot be rugged."
+        />
+
+        <Button type="submit" size="lg" loading={busy} disabled={!!info?.freeze}>
+          {!wallet.publicKey ? "Connect Wallet" : busy ? "Confirm in wallet…" : "Create Liquidity"}
+        </Button>
+        <p className="-mt-1 text-center text-xs text-dim">
+          {lamportsToSol(FEES.createLiquidity)} SOL service + ≈{POOL_RENT_ESTIMATE_SOL} SOL Meteora pool rent
+        </p>
+      </Card>
 
       {error && <Notice tone="error">{error}</Notice>}
       {!TREASURY && <Notice>Preview mode: service fees are not charged.</Notice>}
-
-      <div className="flex flex-col items-center gap-2">
-        <Button type="submit" loading={busy} className="w-full sm:w-72">
-          {!wallet.publicKey ? "Connect Wallet" : busy ? "Confirm in wallet…" : "Create Liquidity"}
-        </Button>
-        <p className="text-xs text-muted">
-          {lamportsToSol(FEES.createLiquidity)} SOL service + ≈{POOL_RENT_ESTIMATE_SOL} SOL Meteora pool rent
-        </p>
-      </div>
     </form>
   );
 }

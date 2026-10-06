@@ -6,7 +6,37 @@ import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { buildRemoveTx, listPositions, type UserPosition } from "@/lib/chain/meteora";
 import { FEES, lamportsToSol } from "@/lib/config";
 import { friendlyError, sendAndConfirm, solscanTx } from "@/lib/client/send";
-import { Button, Card, Notice } from "@/components/ui";
+import { metadataImage } from "@/lib/client/token-image";
+import { Button, Card, Notice, SolLogo, TokenAvatar } from "@/components/ui";
+
+function PairIcon({ uri, symbol }: { uri: string; symbol: string }) {
+  const [img, setImg] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    metadataImage(uri).then((i) => alive && setImg(i));
+    return () => {
+      alive = false;
+    };
+  }, [uri]);
+  return (
+    <span className="relative flex shrink-0">
+      <TokenAvatar src={img} label={symbol} size={44} />
+      <span className="-ml-3 mt-5 rounded-full ring-4 ring-surface"><SolLogo size={26} /></span>
+    </span>
+  );
+}
+
+function Amount({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
+  return (
+    <div className="flex min-w-0 items-center gap-2.5 rounded-xl border border-line bg-bg/50 px-3 py-2.5">
+      {icon}
+      <div className="min-w-0">
+        <div className="truncate text-[11px] text-dim">{label}</div>
+        <div className="truncate font-mono text-sm">{value}</div>
+      </div>
+    </div>
+  );
+}
 
 export function RemoveLiquidity() {
   const { connection } = useConnection();
@@ -60,53 +90,68 @@ export function RemoveLiquidity() {
 
   if (!wallet.publicKey) {
     return (
-      <Card className="mx-auto max-w-xl text-center">
-        <p className="text-sm text-muted">Connect the wallet that created the pool.</p>
-        <Button className="mt-4" onClick={() => setVisible(true)}>Connect Wallet</Button>
+      <Card highlight className="rise mx-auto max-w-md py-10 text-center">
+        <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-surface-2 text-ember">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"><path d="M3 7h15a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3zm0 0 2.5-3h11M16.5 13.5h1" /></svg>
+        </div>
+        <h2 className="font-display text-lg font-semibold">Connect your wallet</h2>
+        <p className="mt-1.5 text-sm text-muted">Use the wallet that created the pool.</p>
+        <Button className="mt-6" onClick={() => setVisible(true)}>Connect Wallet</Button>
       </Card>
     );
   }
 
   return (
-    <div className="mx-auto grid max-w-3xl gap-4">
+    <div className="rise mx-auto grid max-w-3xl gap-4">
       {error && <Notice tone="error">{error}</Notice>}
       {lastSig && (
         <Notice tone="success">
-          Liquidity withdrawn to your wallet.{" "}
-          <a className="underline" href={solscanTx(lastSig)} target="_blank" rel="noreferrer">View transaction</a>
+          Liquidity withdrawn to your wallet. <a className="underline" href={solscanTx(lastSig)} target="_blank" rel="noreferrer">View transaction</a>
         </Notice>
       )}
-      {positions === null && <Card className="animate-pulse text-center text-sm text-muted">Loading your Meteora positions…</Card>}
-      {positions?.length === 0 && <Card className="text-center text-sm text-muted">No Meteora DAMM v2 positions in this wallet.</Card>}
-      {positions?.map((p) => (
-        <Card key={p.position.toBase58()} className="flex flex-col gap-4 sm:flex-row sm:items-center">
-          <div className="flex-1">
-            <div className="font-semibold">
-              {p.name} <span className="text-muted">/ SOL</span>
-            </div>
-            <div className="mt-1 font-mono text-xs text-muted">{p.tokenMint.toBase58()}</div>
-            <div className="mt-3 flex gap-6 text-sm">
-              <div>
-                <div className="text-xs text-muted">{p.symbol}</div>
-                <div className="font-mono">{p.outToken}</div>
-              </div>
-              <div>
-                <div className="text-xs text-muted">SOL</div>
-                <div className="font-mono">{p.outSol}</div>
-              </div>
-            </div>
-          </div>
-          {p.locked ? (
-            <span className="rounded-xl border border-line px-4 py-2 text-center text-sm text-muted">Locked forever</span>
-          ) : (
-            <Button onClick={() => remove(p)} loading={busy === p.position.toBase58()} disabled={!!busy}>
-              Remove All
-            </Button>
-          )}
+      {positions === null && [0, 1].map((i) => <div key={i} className="skeleton h-[132px] rounded-[20px]" />)}
+      {positions?.length === 0 && (
+        <Card className="py-12 text-center">
+          <p className="font-display text-lg font-semibold">No positions yet</p>
+          <p className="mt-1.5 text-sm text-muted">This wallet has no Meteora DAMM v2 liquidity.</p>
         </Card>
-      ))}
+      )}
+      {positions?.map((p) => {
+        const id = p.position.toBase58();
+        return (
+          <Card key={id} className="transition hover:border-line-hi">
+            <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+              <div className="flex min-w-0 flex-1 items-center gap-3.5">
+                <PairIcon uri={p.uri} symbol={p.symbol} />
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="truncate font-display text-lg font-bold">{p.symbol}<span className="text-muted">/SOL</span></span>
+                    {p.locked && <span className="rounded-md bg-sun/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-sun">Locked</span>}
+                  </div>
+                  <a href={`https://solscan.io/account/${p.pool.toBase58()}`} target="_blank" rel="noreferrer" className="font-mono text-xs text-dim hover:text-muted">
+                    {p.pool.toBase58().slice(0, 6)}…{p.pool.toBase58().slice(-6)}
+                  </a>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 sm:w-[300px]">
+                <Amount label={p.symbol} value={p.outToken} icon={<TokenAvatar label={p.symbol} size={20} />} />
+                <Amount label="SOL" value={p.outSol} icon={<SolLogo size={20} />} />
+              </div>
+            </div>
+            <div className="mt-4 flex justify-end border-t border-line pt-4">
+              {p.locked ? (
+                <span className="text-sm text-dim">Permanently locked — fees claimable on Meteora</span>
+              ) : (
+                <Button onClick={() => remove(p)} loading={busy === id} disabled={!!busy} className="w-full sm:w-auto">
+                  Remove All Liquidity
+                </Button>
+              )}
+            </div>
+          </Card>
+        );
+      })}
       {positions && positions.length > 0 && (
-        <p className="text-center text-xs text-muted">
+        <p className="text-center text-xs text-dim">
           {lamportsToSol(FEES.removeLiquidity)} SOL service fee · unclaimed swap fees are collected and the position rent is refunded
         </p>
       )}

@@ -116,6 +116,7 @@ export interface UserPosition {
   tokenMint: PublicKey; // the non-SOL side
   symbol: string;
   name: string;
+  uri: string;
   locked: boolean;
   outToken: string;
   outSol: string;
@@ -123,8 +124,8 @@ export interface UserPosition {
   minOutB: BN;
 }
 
-/** Reads name/symbol from Metaplex metadata; falls back to a short mint. */
-async function tokenLabels(conn: Connection, mints: PublicKey[]) {
+/** Reads name/symbol/uri from Metaplex metadata; falls back to a short mint. */
+export async function tokenLabels(conn: Connection, mints: PublicKey[]): Promise<{ name: string; symbol: string; uri: string }[]> {
   const infos = await conn.getMultipleAccountsInfo(mints.map(metadataPda));
   const readStr = (d: Buffer, o: number) => {
     const len = d.readUInt32LE(o);
@@ -132,13 +133,14 @@ async function tokenLabels(conn: Connection, mints: PublicKey[]) {
   };
   return infos.map((a, i) => {
     const short = `${mints[i].toBase58().slice(0, 4)}…${mints[i].toBase58().slice(-4)}`;
-    if (!a) return { name: short, symbol: short };
+    if (!a) return { name: short, symbol: short, uri: "" };
     try {
       const name = readStr(a.data, 65);
       const symbol = readStr(a.data, name.next);
-      return { name: name.s || short, symbol: symbol.s || short };
+      const uri = readStr(a.data, symbol.next);
+      return { name: name.s || short, symbol: symbol.s || short, uri: uri.s };
     } catch {
-      return { name: short, symbol: short };
+      return { name: short, symbol: short, uri: "" };
     }
   });
 }
