@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import dynamic from "next/dynamic";
-import { BrandMark } from "@/components/ops/BrandMark";
+import { site } from "@/lib/site-config";
 
 // Client-only: the wallet button reads window wallets.
 const WalletMultiButton = dynamic(() => import("@solana/wallet-adapter-react-ui").then((m) => m.WalletMultiButton), {
@@ -35,11 +35,15 @@ const Svg = ({ children }: { children: React.ReactNode }) => (
 export function Logo() {
   return (
     <Link href="/" className="group flex items-center gap-2.5">
-      <span className="relative grid h-9 w-9 place-items-center rounded-xl bg-brand shadow-[0_8px_24px_-8px_rgba(245,75,0,.7)]">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M13 2 4 14h7l-1 8 9-12h-7z" /></svg>
-        <span className="absolute inset-0 rounded-xl ring-1 ring-inset ring-white/25" />
-      </span>
-      <BrandMark className="hidden font-display text-[17px] font-bold uppercase tracking-[0.08em] sm:inline" />
+      {site.logo ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={site.logo} alt={site.name} width={36} height={36} className="h-9 w-9 drop-shadow-[0_6px_18px_rgba(245,75,0,.45)] transition group-hover:scale-105" />
+      ) : (
+        <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M13 2 4 14h7l-1 8 9-12h-7z" /></svg>
+        </span>
+      )}
+      <span className="hidden font-display text-[17px] font-bold uppercase tracking-[0.08em] sm:inline">{site.name}</span>
     </Link>
   );
 }
