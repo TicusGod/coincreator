@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { CoinInfo } from "@/lib/dexscreener";
 import { age, usd } from "@/lib/format";
 import { Notice, Segmented, TokenAvatar } from "@/components/ui";
+import { Card3D } from "@/components/Card3D";
 
 const Icon = {
   dex: <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 3 6v6c0 5 3.8 9.4 9 10 5.2-.6 9-5 9-10V6zm-3 9h2v5H9zm4-3h2v8h-2z" /></svg>,
@@ -25,7 +26,7 @@ function CoinCard({ c, rank, now }: { c: CoinInfo; rank: number; now: number }) 
   const fresh = c.pairCreatedAt && now - c.pairCreatedAt < 6 * 3600_000;
 
   return (
-    <div className="glass group relative rounded-[20px] p-5 transition duration-300 hover:-translate-y-0.5 hover:ring-brand">
+    <Card3D tilt={6} className="group p-5">
       <span className="absolute right-4 top-4 font-mono text-[11px] text-dim">#{rank}</span>
       <div className="flex items-center gap-3.5 pr-8">
         <TokenAvatar src={c.imageUrl} label={c.symbol} size={52} />
@@ -35,11 +36,11 @@ function CoinCard({ c, rank, now }: { c: CoinInfo; rank: number; now: number }) 
         </div>
       </div>
       <div className="mt-4 grid grid-cols-2 gap-2">
-        <div className="rounded-xl border border-line bg-bg/50 px-3 py-2">
+        <div className="field rounded-xl px-3 py-2">
           <div className="text-[11px] text-dim">Market Cap</div>
           <div className="font-display text-base font-bold text-good">{usd(c.marketCap)}</div>
         </div>
-        <div className="rounded-xl border border-line bg-bg/50 px-3 py-2">
+        <div className="field rounded-xl px-3 py-2">
           <div className="text-[11px] text-dim">Pair age</div>
           <div className={`flex items-center gap-1.5 font-display text-base font-bold ${fresh ? "text-sun" : "text-text"}`}>
             {fresh && <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-sun" />}
@@ -68,7 +69,7 @@ function CoinCard({ c, rank, now }: { c: CoinInfo; rank: number; now: number }) 
           Copy Coin
         </Link>
       </div>
-    </div>
+    </Card3D>
   );
 }
 
@@ -131,7 +132,7 @@ export function CopyTrending() {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search name, ticker or address"
-            className="h-11 w-full rounded-xl border border-line bg-surface/70 pl-10 pr-3 text-sm outline-none backdrop-blur transition placeholder:text-dim focus:border-ember/60"
+            className="field h-11 w-full rounded-xl pl-10 pr-3 text-sm outline-none transition placeholder:text-dim focus:border-ember/60"
           />
         </div>
         <div className="flex gap-2">

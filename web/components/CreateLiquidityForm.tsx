@@ -8,7 +8,8 @@ import { FEE_TIERS, buildCreatePoolTx, tokenLabels } from "@/lib/chain/meteora";
 import { FEES, TREASURY, lamportsToSol } from "@/lib/config";
 import { friendlyError, sendAndConfirm, solscanTx } from "@/lib/client/send";
 import { metadataImage } from "@/lib/client/token-image";
-import { Button, Card, ExternalLink, Field, Input, Notice, Row, Segmented, SolLogo, SuccessPanel, Toggle, TokenAvatar } from "@/components/ui";
+import { Card3D } from "@/components/Card3D";
+import { Button, ExternalLink, Field, Input, Notice, Row, Segmented, SolLogo, SuccessPanel, ToggleRow, TokenAvatar } from "@/components/ui";
 
 const POOL_RENT_ESTIMATE_SOL = 0.03;
 const SOL_RESERVE = 0.05; // keep for fees + rent when pressing Max on SOL
@@ -38,7 +39,7 @@ function AmountRow({ label, value, onChange, token, balance, onMax, onHalf }: {
   label: string; value: string; onChange: (v: string) => void; token: React.ReactNode; balance?: string; onMax?: () => void; onHalf?: () => void;
 }) {
   return (
-    <div className="rounded-2xl border border-line bg-bg/60 p-4 transition focus-within:border-ember/60 focus-within:shadow-[0_0_0_4px_rgba(245,75,0,.1)]">
+    <div className="field rounded-2xl p-4 transition focus-within:border-ember/60 focus-within:shadow-[0_0_0_4px_rgba(245,75,0,.1)]">
       <div className="mb-2 flex items-center justify-between text-xs text-muted">
         <span>{label}</span>
         {balance !== undefined && (
@@ -175,7 +176,7 @@ export function CreateLiquidityForm({ initialMint = "" }: { initialMint?: string
 
   return (
     <form onSubmit={submit} className="rise mx-auto grid w-full max-w-[520px] grid-cols-[minmax(0,1fr)] gap-4">
-      <Card highlight className="grid grid-cols-[minmax(0,1fr)] gap-4">
+      <Card3D className="grid grid-cols-[minmax(0,1fr)] gap-4 p-5 sm:p-8">
         <Field label="Token address" hint={mintKey && !info ? "Looking up token…" : undefined}>
           <div className="relative">
             <Input value={mint} onChange={(e) => setMint(e.target.value.trim())} placeholder="Paste your token mint" spellCheck={false} className="pr-24 font-mono text-sm" />
@@ -230,14 +231,14 @@ export function CreateLiquidityForm({ initialMint = "" }: { initialMint?: string
           <Segmented value={feeBps} onChange={setFeeBps} options={FEE_TIERS.map((b) => ({ value: b, label: `${b / 100}%` }))} />
         </Field>
 
-        <div className="rounded-2xl border border-line bg-bg/50 px-4 py-3">
+        <div className="rounded-2xl border border-white/[.05] bg-black/20 px-4 py-3">
           <Row label="Starting price">{price ? <span className="font-mono">{price.toPrecision(4)} SOL</span> : "—"}</Row>
           <Row label="Starting market cap">{mcapSol ? <span className="font-mono">{fmt(mcapSol, 2)} SOL</span> : "—"}</Row>
           <Row label="Supply in pool">{share ? `${fmt(share, 1)}%` : "—"}</Row>
           <Row label="Pool type">DAMM v2 · full range</Row>
         </div>
 
-        <Toggle
+        <ToggleRow
           checked={lock}
           onChange={setLock}
           title="Lock liquidity forever"
@@ -250,7 +251,7 @@ export function CreateLiquidityForm({ initialMint = "" }: { initialMint?: string
         <p className="-mt-1 text-center text-xs text-dim">
           {lamportsToSol(FEES.createLiquidity)} SOL service + ≈{POOL_RENT_ESTIMATE_SOL} SOL Meteora pool rent
         </p>
-      </Card>
+      </Card3D>
 
       {error && <Notice tone="error">{error}</Notice>}
       {!TREASURY && <Notice>Preview mode: service fees are not charged.</Notice>}

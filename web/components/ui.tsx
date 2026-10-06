@@ -1,31 +1,33 @@
 // Shared UI primitives (one file: they are always used together).
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from "react";
 
-export function PageTitle({ eyebrow, title, accent, subtitle }: { eyebrow?: string; title: string; accent?: string; subtitle?: string }) {
+export function PageTitle({ eyebrow, title, accent, subtitle, align = "left" }: { eyebrow?: string; title: string; accent?: string; subtitle?: string; align?: "left" | "center" }) {
+  const center = align === "center";
   return (
-    <div className="rise mb-10 text-center">
+    <div className={`rise mb-8 ${center ? "text-center" : "mx-auto max-w-[680px]"}`}>
       {eyebrow && (
-        <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-line bg-surface/70 px-3 py-1 text-xs font-medium text-muted backdrop-blur">
+        <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/[.07] bg-white/[.03] px-3 py-1 text-[11px] font-semibold uppercase tracking-[.14em] text-muted">
           <span className="h-1.5 w-1.5 rounded-full bg-brand shadow-[0_0_10px_2px_rgba(245,75,0,.6)]" />
           {eyebrow}
         </span>
       )}
-      <h1 className="font-display text-[34px] font-bold leading-[1.1] tracking-tight sm:text-5xl">
+      <h1 className="font-display text-[32px] font-extrabold leading-[1.1] tracking-tight sm:text-[42px]">
         {title} {accent && <span className="text-brand">{accent}</span>}
       </h1>
-      {subtitle && <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-muted">{subtitle}</p>}
+      {subtitle && <p className={`mt-3 max-w-xl text-[15px] leading-relaxed text-muted ${center ? "mx-auto" : ""}`}>{subtitle}</p>}
     </div>
   );
 }
 
+/** Static surface. `highlight` = the glowing gradient-rim 3D card (use Card3D for the cursor sheen/tilt). */
 export function Card({ children, className = "", highlight }: { children: ReactNode; className?: string; highlight?: boolean }) {
-  return <div className={`glass rounded-[20px] p-5 sm:p-6 ${highlight ? "ring-brand" : ""} ${className}`}>{children}</div>;
+  return <div className={`${highlight ? "card-3d is-flat" : "card-3d-soft"} p-5 sm:p-7 ${className}`}>{children}</div>;
 }
 
 export function SectionLabel({ children, right }: { children: ReactNode; right?: ReactNode }) {
   return (
     <div className="mb-4 flex items-center justify-between">
-      <h2 className="font-display text-[15px] font-semibold tracking-tight">{children}</h2>
+      <h2 className="font-display text-[16px] font-bold tracking-tight">{children}</h2>
       {right}
     </div>
   );
@@ -34,7 +36,7 @@ export function SectionLabel({ children, right }: { children: ReactNode; right?:
 export function Field({ label, hint, right, children }: { label: string; hint?: ReactNode; right?: ReactNode; children: ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-2 flex items-center justify-between text-[13px] font-medium text-muted">
+      <span className="mb-2 flex items-center justify-between font-display text-[13px] font-bold text-text">
         {label}
         {right}
       </span>
@@ -45,7 +47,7 @@ export function Field({ label, hint, right, children }: { label: string; hint?: 
 }
 
 const inputCls =
-  "w-full rounded-xl border border-line bg-bg/60 px-3.5 py-3 text-[15px] text-text outline-none transition placeholder:text-dim hover:border-line-hi focus:border-ember/70 focus:bg-bg/80 focus:shadow-[0_0_0_4px_rgba(245,75,0,.12)]";
+  "field w-full rounded-[14px] px-4 py-3 text-[15px] text-text outline-none transition placeholder:text-dim focus:border-ember/60 focus:shadow-[inset_0_2px_8px_rgba(0,0,0,.6),0_0_0_4px_rgba(245,75,0,.12)]";
 
 export const Input = (p: InputHTMLAttributes<HTMLInputElement>) => <input {...p} className={`${inputCls} ${p.className ?? ""}`} />;
 export const Textarea = (p: TextareaHTMLAttributes<HTMLTextAreaElement>) => (
@@ -54,8 +56,8 @@ export const Textarea = (p: TextareaHTMLAttributes<HTMLTextAreaElement>) => (
 
 export function Switch({ checked }: { checked: boolean }) {
   return (
-    <span className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition ${checked ? "bg-brand" : "bg-line-hi"}`}>
-      <span className={`h-5 w-5 rounded-full bg-white shadow-md transition-transform ${checked ? "translate-x-5" : ""}`} />
+    <span className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full p-0.5 transition ${checked ? "bg-brand shadow-[0_0_16px_-2px_rgba(245,75,0,.7)]" : "field"}`}>
+      <span className={`h-5 w-5 rounded-full bg-white shadow-[0_2px_6px_rgba(0,0,0,.5)] transition-transform ${checked ? "translate-x-5" : ""}`} />
     </span>
   );
 }
@@ -64,22 +66,33 @@ export function Toggle({ checked, onChange, title, text, price, badge }: {
   checked: boolean; onChange: (v: boolean) => void; title: string; text: string; price?: string; badge?: string;
 }) {
   return (
+    <div className="flex flex-col">
+      <div className="flex flex-wrap items-baseline gap-x-2 font-display text-[15px] font-bold">
+        {title}
+        {badge && <span className="text-[10px] font-semibold text-sun">({badge})</span>}
+      </div>
+      <p className="mt-1.5 flex-1 text-[13px] leading-relaxed text-muted">{text}</p>
+      <button type="button" role="switch" aria-checked={checked} aria-label={title} onClick={() => onChange(!checked)} className="mt-3 flex w-fit items-center gap-2.5">
+        <Switch checked={checked} />
+        {price && <span className={`text-[13px] font-medium ${checked ? "text-text" : "text-dim"}`}>({price})</span>}
+      </button>
+    </div>
+  );
+}
+
+/** Bordered variant used for single options inside forms (e.g. lock liquidity). */
+export function ToggleRow({ checked, onChange, title, text }: { checked: boolean; onChange: (v: boolean) => void; title: string; text: string }) {
+  return (
     <button
       type="button"
       role="switch"
       aria-checked={checked}
       onClick={() => onChange(!checked)}
-      className={`group flex w-full items-start gap-3.5 rounded-2xl border p-4 text-left transition ${
-        checked ? "ring-brand" : "border-line bg-bg/40 hover:border-line-hi"
-      }`}
+      className={`field flex w-full items-start gap-3.5 rounded-2xl p-4 text-left transition ${checked ? "border-ember/40" : ""}`}
     >
       <span className="flex-1">
-        <span className="flex flex-wrap items-center gap-2 text-sm font-semibold">
-          {title}
-          {badge && <span className="rounded-md bg-ember/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-ember">{badge}</span>}
-        </span>
+        <span className="block font-display text-sm font-bold">{title}</span>
         <span className="mt-1 block text-xs leading-relaxed text-muted">{text}</span>
-        {price && <span className={`mt-2 inline-block font-mono text-xs ${checked ? "text-sun" : "text-dim"}`}>{price}</span>}
       </span>
       <Switch checked={checked} />
     </button>
@@ -90,7 +103,7 @@ export function Button({ children, loading, variant = "brand", size = "md", clas
   loading?: boolean; variant?: "brand" | "ghost"; size?: "md" | "lg";
 } & ButtonHTMLAttributes<HTMLButtonElement>) {
   const v = variant === "brand" ? "btn-brand" : "border border-line bg-surface-2/70 text-text hover:border-line-hi hover:bg-surface-2";
-  const s = size === "lg" ? "h-[52px] px-6 text-[15px] rounded-2xl" : "h-11 px-5 text-sm rounded-xl";
+  const s = size === "lg" ? "h-[54px] px-6 text-[15px] rounded-2xl font-display font-bold" : "h-11 px-5 text-sm rounded-xl font-display font-bold";
   return (
     <button
       {...p}
@@ -189,7 +202,7 @@ export function SuccessPanel({ title, address, children }: { title: string; addr
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
         </span>
       </div>
-      <h2 className="font-display text-2xl font-bold">{title}</h2>
+      <h2 className="font-display text-2xl font-extrabold">{title}</h2>
       <p className="mx-auto mt-3 max-w-sm break-all rounded-xl border border-line bg-bg/60 px-3 py-2 font-mono text-xs text-muted">{address}</p>
       <div className="mt-6 grid gap-2 sm:grid-cols-2">{children}</div>
     </Card>
@@ -202,5 +215,23 @@ export function ExternalLink({ href, children }: { href: string; children: React
       {children}
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M7 17 17 7M9 7h8v8" /></svg>
     </a>
+  );
+}
+
+/** Orion-style long-form help under a tool: headings + paragraphs + numbered steps. */
+export function Explainer({ children }: { children: ReactNode }) {
+  return <article className="prose-cc mx-auto mt-16 max-w-[680px] border-t border-white/[.06] pt-6">{children}</article>;
+}
+
+export function Steps({ items }: { items: ReactNode[] }) {
+  return (
+    <ol className="my-4 grid gap-2.5">
+      {items.map((it, i) => (
+        <li key={i} className="flex gap-3 text-[15px] leading-relaxed text-muted">
+          <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-brand font-display text-[11px] font-extrabold text-white shadow-[0_6px_14px_-6px_rgba(245,75,0,.8)]">{i + 1}</span>
+          <span className="pt-px">{it}</span>
+        </li>
+      ))}
+    </ol>
   );
 }

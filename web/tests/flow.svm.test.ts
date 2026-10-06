@@ -6,7 +6,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, type Transaction } from "@solana/web3.js";
 import { getAssociatedTokenAddressSync, unpackMint } from "@solana/spl-token";
 import { LiteSVM, Rent } from "litesvm";
-import { buildCreateCoinTx, coinFee } from "@/lib/chain/token";
+import { buildCreateCoinTx, buildMintMoreTx, buildRevokeMintTx, coinFee } from "@/lib/chain/token";
 import { buildCreatePoolTx, buildRemoveTx, listPositions } from "@/lib/chain/meteora";
 import { METADATA_PROGRAM_ID, metadataPda } from "@/lib/chain/metaplex";
 import { FEES } from "@/lib/config";
@@ -79,6 +79,20 @@ describe("full flow", () => {
     expect(tokens(mint)).toBeGreaterThan(999_000_000n * 1_000_000n);
     expect(bal(owner.publicKey) - solBefore).toBeGreaterThan(1.9 * LAMPORTS_PER_SOL);
     expect(await listPositions(conn, owner.publicKey)).toHaveLength(0);
+  });
+
+  it("mints more later, then revokes the mint authority (manage tools)", async () => {
+    const { tx, mint: kp } = await buildCreateCoinTx(conn, {
+      owner: owner.publicKey, name: "Later", symbol: "LTR", uri: "https://x.y", decimals: 6, supply: 1000n, revokeFreeze: true, revokeMint: false, revokeUpdate: false,
+    }, null);
+    await send(tx, [kp]);
+    const before = bal(treasury.publicKey);
+    await send(buildMintMoreTx(owner.publicKey, kp.publicKey, 6, "500.5", treasury.publicKey));
+    expect(tokens(kp.publicKey)).toBe(1_500_500_000n);
+    await send(buildRevokeMintTx(owner.publicKey, kp.publicKey, treasury.publicKey));
+    expect(unpackMint(kp.publicKey, (await conn.getAccountInfo(kp.publicKey))!).mintAuthority).toBeNull();
+    expect(bal(treasury.publicKey) - before).toBe(FEES.mintMore + FEES.revokeMint);
+    expect(() => buildMintMoreTx(owner.publicKey, kp.publicKey, 6, "1.1234567")).toThrow(/Invalid/);
   });
 
   it("refuses a pool while the freeze authority is live", async () => {

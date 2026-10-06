@@ -14,8 +14,8 @@ const WalletMultiButton = dynamic(() => import("@solana/wallet-adapter-react-ui"
 
 const I = {
   coin: <path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Zm0 4v10m-3-7.5c0-1 1.3-1.8 3-1.8s3 .8 3 1.8-1.3 1.7-3 1.7-3 .8-3 1.8 1.3 1.8 3 1.8 3-.8 3-1.8" />,
-  add: <path d="M4 17c3-1 4-6 8-6s5 5 8 6M12 3v5m-2.5-2.5h5" />,
-  remove: <path d="M4 17c3-1 4-6 8-6s5 5 8 6M9.5 5.5h5" />,
+  add: <path d="M12 3.5c3 3.6 5.5 6.6 5.5 9.6a5.5 5.5 0 0 1-11 0c0-3 2.5-6 5.5-9.6ZM12 11v5m-2.5-2.5h5" />,
+  remove: <path d="M12 3.5c3 3.6 5.5 6.6 5.5 9.6a5.5 5.5 0 0 1-11 0c0-3 2.5-6 5.5-9.6ZM9.5 13.5h5M4 4l16 16" />,
   copy: <path d="M13 2 4 14h7l-1 8 9-12h-7z" />,
 };
 
@@ -26,8 +26,8 @@ export const NAV = [
   { href: "/copy-trending", label: "Copy Trending", icon: I.copy },
 ] as const;
 
-const Svg = ({ children }: { children: React.ReactNode }) => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+const Svg = ({ children, size = 17 }: { children: React.ReactNode; size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     {children}
   </svg>
 );
@@ -37,13 +37,13 @@ export function Logo() {
     <Link href="/" className="group flex items-center gap-2.5">
       {site.logo ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={site.logo} alt={site.name} width={36} height={36} className="h-9 w-9 drop-shadow-[0_6px_18px_rgba(245,75,0,.45)] transition group-hover:scale-105" />
+        <img src={site.logo} alt={site.name} width={38} height={38} className="h-[38px] w-[38px] drop-shadow-[0_6px_18px_rgba(245,75,0,.5)] transition group-hover:scale-105" />
       ) : (
         <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M13 2 4 14h7l-1 8 9-12h-7z" /></svg>
         </span>
       )}
-      <span className="hidden font-display text-[18px] font-bold tracking-tight sm:inline">
+      <span className="font-display text-[19px] font-extrabold tracking-tight">
         {site.name}
         <span className="text-brand">.fun</span>
       </span>
@@ -51,68 +51,101 @@ export function Logo() {
   );
 }
 
-export function Header() {
+function NavItems({ onPick }: { onPick?: () => void }) {
   const path = usePathname();
+  return (
+    <nav className="grid gap-1.5">
+      {NAV.map((n) => {
+        const active = path === n.href;
+        return (
+          <Link
+            key={n.href}
+            href={n.href}
+            onClick={onPick}
+            className={`group relative flex items-center gap-3 rounded-2xl px-3 py-2.5 font-display text-[14px] font-semibold transition ${
+              active ? "bg-gradient-to-r from-ember/15 via-violet/10 to-transparent text-text" : "text-muted hover:bg-white/[.03] hover:text-text"
+            }`}
+          >
+            {active && <span className="absolute -left-4 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-brand" />}
+            <span
+              className={`grid h-9 w-9 place-items-center rounded-xl transition ${
+                active ? "bg-brand text-white shadow-[0_8px_20px_-8px_rgba(245,75,0,.8)]" : "field text-muted group-hover:text-sun"
+              }`}
+            >
+              <Svg>{n.icon}</Svg>
+            </span>
+            {n.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
+function SideFooter() {
+  return (
+    <div className="card-3d-soft p-4">
+      <div className="flex items-center gap-2 text-xs font-semibold text-text">
+        <span className="h-2 w-2 animate-pulse rounded-full bg-good" />
+        Solana mainnet
+      </div>
+      <p className="mt-2 text-[11px] leading-relaxed text-dim">
+        Pools on <span className="font-semibold text-brand">Meteora DAMM v2</span>. Every transaction is signed in your own wallet.
+      </p>
+      {site.x && (
+        <a href={site.x} target="_blank" rel="noreferrer" className="mt-3 inline-flex text-[11px] font-semibold text-muted hover:text-text">
+          Need support? Contact us →
+        </a>
+      )}
+    </div>
+  );
+}
+
+export function Header() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-40">
-      <div className="border-b border-line/70 bg-bg/60 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4">
+    <>
+      {/* Desktop sidebar */}
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-[264px] flex-col border-r border-white/[.06] bg-[#0e0c1a]/80 px-4 py-6 backdrop-blur-2xl lg:flex">
+        <div className="px-2"><Logo /></div>
+        <div className="mt-10 px-1 text-[10px] font-bold uppercase tracking-[.18em] text-dim">Tools</div>
+        <div className="mt-3"><NavItems /></div>
+        <div className="mt-auto"><SideFooter /></div>
+      </aside>
+
+      {/* Top bar */}
+      <header className="sticky top-0 z-30 border-b border-white/[.05] bg-bg/55 backdrop-blur-xl lg:border-0 lg:bg-transparent lg:backdrop-blur-none">
+        <div className="flex h-16 items-center gap-3 px-4 lg:h-20 lg:px-10">
           <button
             aria-label="Menu"
             aria-expanded={open}
-            onClick={() => setOpen((o) => !o)}
-            className="grid h-10 w-10 place-items-center rounded-xl border border-line bg-surface/80 text-text lg:hidden"
+            onClick={() => setOpen(true)}
+            className="field grid h-10 w-10 place-items-center rounded-xl text-text lg:hidden"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d={open ? "M6 6l12 12M18 6L6 18" : "M4 7h16M4 12h10M4 17h16"} />
-            </svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M4 7h16M4 12h10M4 17h16" /></svg>
           </button>
-          <Logo />
-          <nav className="mx-auto hidden items-center gap-1 rounded-2xl border border-line bg-surface/70 p-1 lg:flex">
-            {NAV.map((n) => {
-              const active = path === n.href;
-              return (
-                <Link
-                  key={n.href}
-                  href={n.href}
-                  className={`relative flex items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-medium transition ${
-                    active ? "bg-surface-2 text-text shadow-[inset_0_1px_0_rgba(255,255,255,.06)]" : "text-muted hover:text-text"
-                  }`}
-                >
-                  <span className={active ? "text-ember" : ""}><Svg>{n.icon}</Svg></span>
-                  {n.label}
-                  {active && <span className="absolute inset-x-4 -bottom-[5px] h-px bg-brand" />}
-                </Link>
-              );
-            })}
-          </nav>
-          <div className="ml-auto lg:ml-0">
-            <WalletMultiButton>Select Wallet</WalletMultiButton>
-          </div>
+          <div className="lg:hidden"><Logo /></div>
+          <div className="ml-auto"><WalletMultiButton>Select Wallet</WalletMultiButton></div>
         </div>
-      </div>
+      </header>
+
+      {/* Mobile drawer */}
       {open && (
-        <nav className="glass rise mx-3 mt-2 rounded-2xl p-2 lg:hidden">
-          {NAV.map((n) => {
-            const active = path === n.href;
-            return (
-              <Link
-                key={n.href}
-                href={n.href}
-                onClick={() => setOpen(false)}
-                className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium ${active ? "bg-surface-2 text-text" : "text-muted"}`}
-              >
-                <span className={`grid h-8 w-8 place-items-center rounded-lg ${active ? "bg-brand text-white" : "bg-surface-2"}`}>
-                  <Svg>{n.icon}</Svg>
-                </span>
-                {n.label}
-              </Link>
-            );
-          })}
-        </nav>
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <button aria-label="Close menu" onClick={() => setOpen(false)} className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <aside className="rise absolute inset-y-0 left-0 flex w-[82%] max-w-[300px] flex-col border-r border-white/[.06] bg-[#0e0c1a] px-4 py-6">
+            <div className="flex items-center justify-between px-2">
+              <Logo />
+              <button aria-label="Close" onClick={() => setOpen(false)} className="field grid h-9 w-9 place-items-center rounded-xl text-muted">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+              </button>
+            </div>
+            <div className="mt-8"><NavItems onPick={() => setOpen(false)} /></div>
+            <div className="mt-auto"><SideFooter /></div>
+          </aside>
+        </div>
       )}
-    </header>
+    </>
   );
 }
