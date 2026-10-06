@@ -78,21 +78,43 @@ function NavItems({ onPick }: { onPick?: () => void }) {
   );
 }
 
-function SideFooter() {
+const Mail = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="3" /><path d="m4 7 8 6 8-6" /></svg>
+);
+const X = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
+);
+const Tg = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20m4.6 6.8-1.6 7.6c-.1.5-.4.7-.9.4l-2.5-1.8-1.2 1.1c-.1.1-.3.3-.6.3l.2-2.6 4.7-4.3c.2-.2 0-.3-.3-.1L8.6 13l-2.5-.8c-.5-.2-.5-.5.1-.8l9.8-3.8c.4-.1.8.1.6 1.2" /></svg>
+);
+
+/** Support contacts from site.config.json (email, telegram, x); renders only what is set. */
+export function Contact() {
+  const links = [
+    site.email && { href: `mailto:${site.email}`, label: site.email, icon: <Mail /> },
+    site.telegram && { href: site.telegram, label: "Telegram", icon: <Tg /> },
+    site.x && { href: site.x, label: "X", icon: <X /> },
+  ].filter(Boolean) as { href: string; label: string; icon: React.ReactNode }[];
+  if (!links.length) return null;
   return (
-    <div className="card-3d-soft p-4">
-      <div className="flex items-center gap-2 text-xs font-semibold text-text">
-        <span className="h-2 w-2 animate-pulse rounded-full bg-good" />
-        Solana mainnet
+    <div className="px-2 text-center">
+      <p className="font-display text-[13px] font-semibold text-text">Need support? Contact us</p>
+      <div className="mt-3 flex items-center justify-center gap-2">
+        {links.map((l) => (
+          <a
+            key={l.href}
+            href={l.href}
+            target={l.href.startsWith("mailto:") ? undefined : "_blank"}
+            rel="noreferrer"
+            title={l.label}
+            aria-label={l.label}
+            className="field grid h-9 w-9 place-items-center rounded-xl text-muted transition hover:border-ember/40 hover:text-text"
+          >
+            {l.icon}
+          </a>
+        ))}
       </div>
-      <p className="mt-2 text-[11px] leading-relaxed text-dim">
-        Pools on <span className="font-semibold text-brand">Meteora DAMM v2</span>. Every transaction is signed in your own wallet.
-      </p>
-      {site.x && (
-        <a href={site.x} target="_blank" rel="noreferrer" className="mt-3 inline-flex text-[11px] font-semibold text-muted hover:text-text">
-          Need support? Contact us →
-        </a>
-      )}
+      {site.email && <a href={`mailto:${site.email}`} className="mt-2 block truncate text-[11px] text-dim hover:text-muted">{site.email}</a>}
     </div>
   );
 }
@@ -107,12 +129,12 @@ export function Header() {
         <div className="px-2"><Logo /></div>
         <div className="mt-10 px-1 text-[10px] font-bold uppercase tracking-[.18em] text-dim">Tools</div>
         <div className="mt-3"><NavItems /></div>
-        <div className="mt-auto"><SideFooter /></div>
+        <div className="mt-auto"><Contact /></div>
       </aside>
 
       {/* Top bar */}
-      <header className="sticky top-0 z-30 border-b border-white/[.05] bg-bg/55 backdrop-blur-xl lg:border-0 lg:bg-transparent lg:backdrop-blur-none">
-        <div className="flex h-16 items-center gap-3 px-4 lg:h-20 lg:px-10">
+      <header className="sticky top-0 z-30 border-b border-white/[.05] bg-bg/55 backdrop-blur-xl lg:fixed lg:left-auto lg:right-0 lg:border-0 lg:bg-transparent lg:backdrop-blur-none">
+        <div className="flex h-16 items-center gap-3 px-4 lg:h-auto lg:px-10 lg:pt-6">
           <button
             aria-label="Menu"
             aria-expanded={open}
@@ -138,7 +160,7 @@ export function Header() {
               </button>
             </div>
             <div className="mt-8"><NavItems onPick={() => setOpen(false)} /></div>
-            <div className="mt-auto"><SideFooter /></div>
+            <div className="mt-auto"><Contact /></div>
           </aside>
         </div>
       )}

@@ -7,7 +7,7 @@ export default async function CreateLiquidityPage({ searchParams }: PageProps<"/
   return (
     <ToolLayout
       toolWidth={540}
-      title={<PageTitle eyebrow="Meteora DAMM v2" title="Create" accent="Liquidity" subtitle="Open a TOKEN/SOL pool. Your coin becomes tradable on Jupiter, DexScreener and every Solana wallet." />}
+      title={<PageTitle title="Create" accent="Liquidity" subtitle="Open a TOKEN/SOL pool. Your coin becomes tradable on Jupiter, DexScreener and every Solana wallet." />}
       tool={<CreateLiquidityForm initialMint={typeof mint === "string" ? mint : ""} />}
       aside={<CreateLiquidityExplainer />}
     />

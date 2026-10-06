@@ -12,7 +12,6 @@ export default async function Home({ searchParams }: PageProps<"/">) {
     <ToolLayout
       title={
         <PageTitle
-          eyebrow={address ? "Copy mode" : "Solana token creator"}
           title={address ? "Copy this coin" : "Solana Token"}
           accent={address ? "in 1 click" : "Creator"}
           subtitle="The fastest way to create a Solana SPL token. Simple, beautiful, and ready for a Meteora pool in one click."
