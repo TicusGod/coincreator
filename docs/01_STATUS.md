@@ -10,7 +10,7 @@ Updated: 2026-10-06
 ## Left
 - Name = CoinCreator, domain coincreator.fun (owner 2026-10-06). Logo = Higgsfield cat+lightning mark (brand/).
 - Treasury wallet (`ops/wallet.sh new treasury` or owner's address) → `NEXT_PUBLIC_TREASURY`.
-- Create Coin service fee = 0.5 SOL (owner 2026-10-06); options + liquidity fees still placeholders (env `NEXT_PUBLIC_FEE_*`).
+- Create Coin = 0.3 SOL base, 0.5 SOL with revoke freeze + revoke mint (0.1 each) (owner 2026-10-06); options + liquidity fees still placeholders (env `NEXT_PUBLIC_FEE_*`).
 - Vercel project + env, then one real mainnet run with a tiny amount.
 - Not visually checked in a browser yet (no local server rule) — check on the first Vercel preview.
 

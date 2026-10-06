@@ -8,7 +8,7 @@ const sol = (v: string | undefined, fallback: number) => {
 
 /** Fees in lamports. Override with NEXT_PUBLIC_FEE_* (in SOL). */
 export const FEES = {
-  createCoin: sol(process.env.NEXT_PUBLIC_FEE_CREATE_SOL, 0.5),
+  createCoin: sol(process.env.NEXT_PUBLIC_FEE_CREATE_SOL, 0.3),
   revokeFreeze: sol(process.env.NEXT_PUBLIC_FEE_REVOKE_FREEZE_SOL, 0.1),
   revokeMint: sol(process.env.NEXT_PUBLIC_FEE_REVOKE_MINT_SOL, 0.1),
   revokeUpdate: sol(process.env.NEXT_PUBLIC_FEE_REVOKE_UPDATE_SOL, 0.1),
