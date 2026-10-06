@@ -1,8 +1,8 @@
 {
-  "name": "copycat",
+  "name": "CoinCreator",
   "chain": "solana",
   "status": "prelaunch",
-  "url": null,
+  "url": "https://coincreator.fun",
   "ca": null,
   "x": null,
   "logo": "/brand/logo.png"

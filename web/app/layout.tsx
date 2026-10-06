@@ -11,7 +11,8 @@ const jakarta = Plus_Jakarta_Sans({ variable: "--font-jakarta", subsets: ["latin
 const mono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: `${site.name.toUpperCase()} — Create & copy Solana coins on Meteora`,
+  metadataBase: new URL(site.url ?? "https://coincreator.fun"),
+  title: `${site.name} — Create & copy Solana coins on Meteora`,
   description: "Create a Solana coin, add Meteora liquidity, or copy a trending coin in one click.",
 };
 

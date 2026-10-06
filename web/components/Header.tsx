@@ -43,7 +43,10 @@ export function Logo() {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff"><path d="M13 2 4 14h7l-1 8 9-12h-7z" /></svg>
         </span>
       )}
-      <span className="hidden font-display text-[17px] font-bold uppercase tracking-[0.08em] sm:inline">{site.name}</span>
+      <span className="hidden font-display text-[18px] font-bold tracking-tight sm:inline">
+        {site.name}
+        <span className="text-brand">.fun</span>
+      </span>
     </Link>
   );
 }

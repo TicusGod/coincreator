@@ -55,7 +55,8 @@ def og(mark: Image.Image, w=1200, h=630) -> Image.Image:
     bold = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial Bold.ttf", 92)
     reg = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial.ttf", 34)
     t = ImageDraw.Draw(img)
-    t.text((510, 225), "COPYCAT", font=bold, fill=(245, 245, 255))
+    t.text((510, 225), "CoinCreator", font=bold, fill=(245, 245, 255))
+    t.text((514, 400), "coincreator.fun", font=reg, fill=(245, 75, 0))
     t.text((514, 345), "Create & copy Solana coins on Meteora", font=reg, fill=(149, 149, 178))
     return img.convert("RGB")
 

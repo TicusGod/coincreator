@@ -1,4 +1,4 @@
-# COPYCAT — status
+# CoinCreator (coincreator.fun) — status
 
 Updated: 2026-10-06
 
@@ -8,7 +8,7 @@ Updated: 2026-10-06
 - `npm test` — routes called directly against live DexScreener, upload guards (host allowlist, origin, type sniff), RPC method allowlist (8/8).
 
 ## Left
-- Name/brand (COPYCAT is a working name), logo (`ops/site.sh logo`).
+- Name = CoinCreator, domain coincreator.fun (owner 2026-10-06). Logo = Higgsfield cat+lightning mark (brand/).
 - Treasury wallet (`ops/wallet.sh new treasury` or owner's address) → `NEXT_PUBLIC_TREASURY`.
 - Create Coin service fee = 0.5 SOL (owner 2026-10-06); options + liquidity fees still placeholders (env `NEXT_PUBLIC_FEE_*`).
 - Vercel project + env, then one real mainnet run with a tiny amount.

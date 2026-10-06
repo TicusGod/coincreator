@@ -1,4 +1,4 @@
-# COPYCAT — brief (working name)
+# CoinCreator (coincreator.fun) — brief
 
 1. Pitch: oriontools.io, but pools go on **Meteora DAMM v2** instead of Raydium, plus **Copy Trending** (clone a trending coin's name/ticker/image/socials in one click, data from DexScreener).
 2. Why it wins vs the reference: Orion has no copy flow and only Raydium; Meteora DAMM v2 pools charge swap fees paid in SOL to the creator and can be locked forever (trust signal).
