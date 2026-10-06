@@ -13,6 +13,7 @@ import {
   getBaseFeeParams,
   getCurrentPoint,
   getTokenProgram,
+  getUnClaimLpFee,
   type PoolState,
   type PositionState,
 } from "@meteora-ag/cp-amm-sdk";
@@ -122,6 +123,9 @@ export interface UserPosition {
   outSol: string;
   minOutA: BN; // 95 % of the quote, slippage guard on withdraw
   minOutB: BN;
+  feeSol: string; // unclaimed swap fees (UI units)
+  feeToken: string;
+  hasFees: boolean;
 }
 
 /** Reads name/symbol/uri from Metaplex metadata; falls back to a short mint. */
@@ -158,17 +162,27 @@ export async function listPositions(conn: Connection, owner: PublicKey): Promise
     const poolState = pools[i];
     const mintInfo = mintInfos[i];
     const decimals = mintInfo ? unpackMint(tokenMints[i], mintInfo, mintInfo.owner).decimals : 6;
-    const quote = cpAmm.getWithdrawQuote({
-      liquidityDelta: p.positionState.unlockedLiquidity,
-      sqrtPrice: poolState.sqrtPrice,
-      minSqrtPrice: poolState.sqrtMinPrice,
-      maxSqrtPrice: poolState.sqrtMaxPrice,
-      collectFeeMode: poolState.collectFeeMode,
-      tokenAAmount: poolState.tokenAAmount,
-      tokenBAmount: poolState.tokenBAmount,
-      liquidity: poolState.liquidity,
-    });
+    // The SDK refuses a zero liquidityDelta (fully locked positions), so quote only what exists.
+    const quoteOf = (liquidityDelta: BN) =>
+      liquidityDelta.isZero()
+        ? { outAmountA: new BN(0), outAmountB: new BN(0) }
+        : cpAmm.getWithdrawQuote({
+            liquidityDelta,
+            sqrtPrice: poolState.sqrtPrice,
+            minSqrtPrice: poolState.sqrtMinPrice,
+            maxSqrtPrice: poolState.sqrtMaxPrice,
+            collectFeeMode: poolState.collectFeeMode,
+            tokenAAmount: poolState.tokenAAmount,
+            tokenBAmount: poolState.tokenBAmount,
+            liquidity: poolState.liquidity,
+          });
+    const ps = p.positionState;
+    const quote = quoteOf(ps.unlockedLiquidity.add(ps.permanentLockedLiquidity).add(ps.vestedLiquidity)); // position value
+    const withdrawable = quoteOf(ps.unlockedLiquidity);
     const solIsA = poolState.tokenAMint.equals(NATIVE_MINT);
+    const fees = getUnClaimLpFee(poolState, p.positionState);
+    const feeSolRaw = solIsA ? fees.feeTokenA : fees.feeTokenB;
+    const feeTokenRaw = solIsA ? fees.feeTokenB : fees.feeTokenA;
     return {
       ...p,
       pool: poolKeys[i],
@@ -178,8 +192,11 @@ export async function listPositions(conn: Connection, owner: PublicKey): Promise
       locked: p.positionState.unlockedLiquidity.isZero(),
       outToken: fromRaw(solIsA ? quote.outAmountB : quote.outAmountA, decimals),
       outSol: fromRaw(solIsA ? quote.outAmountA : quote.outAmountB, 9),
-      minOutA: quote.outAmountA.muln(95).divn(100),
-      minOutB: quote.outAmountB.muln(95).divn(100),
+      minOutA: withdrawable.outAmountA.muln(95).divn(100),
+      minOutB: withdrawable.outAmountB.muln(95).divn(100),
+      feeSol: fromRaw(feeSolRaw, 9, 6),
+      feeToken: fromRaw(feeTokenRaw, decimals),
+      hasFees: !feeSolRaw.isZero() || !feeTokenRaw.isZero(),
     };
   });
 }
@@ -210,6 +227,26 @@ export async function buildRemoveTx(conn: Connection, owner: PublicKey, p: UserP
     ...built.instructions,
   );
   if (treasury && FEES.removeLiquidity > 0) tx.add(SystemProgram.transfer({ fromPubkey: owner, toPubkey: treasury, lamports: FEES.removeLiquidity }));
+  tx.feePayer = owner;
+  return tx;
+}
+
+/** Claims the position's swap fees to the owner's wallet (SOL arrives unwrapped). No service fee. */
+export async function buildClaimFeesTx(conn: Connection, owner: PublicKey, p: UserPosition) {
+  const s = p.poolState;
+  const built = await new CpAmm(conn).claimPositionFee({
+    owner,
+    position: p.position,
+    pool: p.pool,
+    positionNftAccount: p.positionNftAccount,
+    tokenAMint: s.tokenAMint,
+    tokenBMint: s.tokenBMint,
+    tokenAVault: s.tokenAVault,
+    tokenBVault: s.tokenBVault,
+    tokenAProgram: getTokenProgram(s.tokenAFlag),
+    tokenBProgram: getTokenProgram(s.tokenBFlag),
+  });
+  const tx = new Transaction().add(ComputeBudgetProgram.setComputeUnitPrice({ microLamports: PRIORITY_MICRO_LAMPORTS }), ...built.instructions);
   tx.feePayer = owner;
   return tx;
 }

@@ -199,6 +199,9 @@ export function CreateCoinForm({ copy }: { copy?: string }) {
         <Link href={`/create-liquidity?mint=${done.mint}`} className="sm:col-span-2">
           <Button size="lg" className="w-full">Create Liquidity on Meteora</Button>
         </Link>
+        <Link href="/my-coins" className="sm:col-span-2">
+          <Button variant="ghost" className="w-full">View in My Coins</Button>
+        </Link>
         <ExternalLink href={solscanToken(done.mint)}>Token</ExternalLink>
         <ExternalLink href={solscanTx(done.sig)}>Transaction</ExternalLink>
       </SuccessPanel>

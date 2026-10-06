@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Coins, DropletOff, Droplets, Mail, TrendingUp } from "lucide-react";
+import { Coins, DropletOff, Droplets, LayoutGrid, Mail, TrendingUp } from "lucide-react";
 import { WalletButton } from "@/components/WalletButton";
 import { TelegramLogo, XLogo } from "@/components/icons";
 import { site } from "@/lib/site-config";
@@ -12,6 +12,7 @@ import { site } from "@/lib/site-config";
 
 export const NAV = [
   { href: "/", label: "Create Coin", icon: Coins },
+  { href: "/my-coins", label: "My Coins", icon: LayoutGrid },
   { href: "/create-liquidity", label: "Create Liquidity", icon: Droplets },
   { href: "/remove-liquidity", label: "Remove Liquidity", icon: DropletOff },
   { href: "/copy-trending", label: "Copy Trending", icon: TrendingUp },

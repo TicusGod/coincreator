@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { useConnection } from "@solana/wallet-adapter-react";
@@ -165,6 +166,9 @@ export function CreateLiquidityForm({ initialMint = "" }: { initialMint?: string
         <a href={`https://dexscreener.com/solana/${done.pool}`} target="_blank" rel="noreferrer" className="sm:col-span-2">
           <Button size="lg" className="w-full">View on DexScreener</Button>
         </a>
+        <Link href="/my-coins" className="sm:col-span-2">
+          <Button variant="ghost" className="w-full">Track it in My Coins</Button>
+        </Link>
         <ExternalLink href={`https://solscan.io/account/${done.pool}`}>Pool</ExternalLink>
         <ExternalLink href={solscanTx(done.sig)}>Transaction</ExternalLink>
       </SuccessPanel>

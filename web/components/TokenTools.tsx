@@ -87,7 +87,7 @@ export function TokenTools() {
   const cta = (label: string) => (wallet.publicKey ? label : "Select Wallet");
 
   return (
-    <section className="mx-auto mt-14 w-full max-w-[680px]">
+    <section id="manage" className="mx-auto mt-14 w-full max-w-[680px] scroll-mt-24">
       <h2 className="font-display text-[22px] font-extrabold tracking-tight">Manage your coin</h2>
       <p className="mt-1.5 text-sm text-muted">Already created a coin with mint authority? Finish it here.</p>
       <div className="mt-6 grid gap-5 md:grid-cols-2">

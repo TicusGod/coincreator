@@ -7,7 +7,11 @@ import { Connection, Keypair, LAMPORTS_PER_SOL, PublicKey, type Transaction } fr
 import { getAssociatedTokenAddressSync, unpackMint } from "@solana/spl-token";
 import { LiteSVM, Rent } from "litesvm";
 import { buildCreateCoinTx, buildMintMoreTx, buildRevokeMintTx, coinFee } from "@/lib/chain/token";
-import { buildCreatePoolTx, buildRemoveTx, listPositions } from "@/lib/chain/meteora";
+import { buildClaimFeesTx, buildCreatePoolTx, buildRemoveTx, listPositions } from "@/lib/chain/meteora";
+import { findMyCoins } from "@/lib/chain/coins";
+import { CpAmm, getTokenProgram } from "@meteora-ag/cp-amm-sdk";
+import { NATIVE_MINT } from "@solana/spl-token";
+import BN from "bn.js";
 import { METADATA_PROGRAM_ID, metadataPda } from "@/lib/chain/metaplex";
 import { FEES } from "@/lib/config";
 import { svmConnection, type SvmConn } from "./support/svm-conn";
@@ -113,6 +117,42 @@ describe("full flow", () => {
     const sig = await sendAndConfirm(wallet, conn, tx, [kp]);
     expect(sig.length).toBeGreaterThan(40);
     expect(tokens(kp.publicKey)).toBe(42_000_000n);
+  });
+
+  it("My Coins: lists the creator's coin with its pool, shows swap fees, claims them", async () => {
+    const { tx, mint: kp } = await buildCreateCoinTx(conn, {
+      owner: owner.publicKey, name: "Mine", symbol: "MiNe", uri: "https://x.y", decimals: 6, supply: 1_000_000n, revokeFreeze: true, revokeMint: true, revokeUpdate: true,
+    }, null);
+    await send(tx, [kp]);
+    const pool = await buildCreatePoolTx(conn, { owner: owner.publicKey, tokenMint: kp.publicKey, tokenAmount: "900000", solAmount: "5", feeBps: 100, lockLiquidity: true }, null);
+    await send(pool.tx, [pool.positionNft]);
+
+    // a trade generates fees (OnlyB mode = fees in SOL)
+    const cp = new CpAmm(conn);
+    const st = await cp.fetchPoolState(pool.pool);
+    const swap = await cp.swap({
+      payer: owner.publicKey, pool: pool.pool, inputTokenMint: NATIVE_MINT, outputTokenMint: kp.publicKey, amountIn: new BN(1_000_000_000), minimumAmountOut: new BN(0),
+      tokenAMint: st.tokenAMint, tokenBMint: st.tokenBMint, tokenAVault: st.tokenAVault, tokenBVault: st.tokenBVault,
+      tokenAProgram: getTokenProgram(st.tokenAFlag), tokenBProgram: getTokenProgram(st.tokenBFlag), referralTokenAccount: null,
+    });
+    await send(swap);
+
+    const coins = await findMyCoins(conn, owner.publicKey);
+    const coin = coins.find((c) => c.mint.equals(kp.publicKey))!;
+    expect(coin.symbol).toBe("MiNe");
+    expect(coin.mintRevoked && coin.freezeRevoked && coin.immutable).toBe(true);
+    expect(coin.supply).toBe(1_000_000);
+    expect(coin.positions).toHaveLength(1);
+    const p = coin.positions[0];
+    expect(p.locked).toBe(true);
+    expect(p.hasFees).toBe(true);
+    expect(Number(p.feeSol)).toBeCloseTo(0.008, 3); // 1 % of 1 SOL, minus Meteora's 20 % protocol share
+
+    const before = bal(owner.publicKey);
+    await send(await buildClaimFeesTx(conn, owner.publicKey, p));
+    expect(bal(owner.publicKey) - before).toBeGreaterThan(0.005 * LAMPORTS_PER_SOL);
+    const after = (await findMyCoins(conn, owner.publicKey)).find((c) => c.mint.equals(kp.publicKey))!;
+    expect(after.positions[0].hasFees).toBe(false);
   });
 
   it("refuses a pool while the freeze authority is live", async () => {

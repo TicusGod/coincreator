@@ -145,3 +145,31 @@ export function CopyTrendingExplainer() {
     </Explainer>
   );
 }
+
+export function MyCoinsExplainer() {
+  return (
+    <Explainer>
+      <h2>Your coins, in one place</h2>
+      <p>
+        Every coin created with the connected wallet appears here automatically, read straight from the blockchain. Nothing to register, nothing stored on our side.
+      </p>
+      <Steps
+        items={[
+          "Copy your contract address (CA) in one click to share it on X or Telegram.",
+          "Follow the live market cap, price, liquidity and 24h volume (from DexScreener).",
+          "See what your Meteora position is worth and the swap fees it earned.",
+          "Click Claim fees to send them to your wallet, as often as you like.",
+        ]}
+      />
+      <h3>How swap fees work</h3>
+      <p>
+        Every trade in your pool pays the swap fee you chose (for example 1 %). Your position earns <strong>80 %</strong> of it, paid in <strong>SOL</strong>; Meteora keeps 20 % as its
+        protocol fee. Fees keep accruing even when liquidity is locked forever, and claiming them is free on our side: you only pay the Solana network fee.
+      </p>
+      <h3>Not seeing a coin?</h3>
+      <p>
+        Coins are found from the wallet that created them. Make sure you are connected with that wallet. Market data shows up a few minutes after the pool is created.
+      </p>
+    </Explainer>
+  );
+}

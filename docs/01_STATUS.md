@@ -7,6 +7,8 @@ Updated: 2026-10-06
 - `npm run test:svm` — create coin → DAMM v2 pool → list → remove all, on the REAL Metaplex + Meteora programs cloned into LiteSVM (4/4).
 - `npm test` — routes called directly against live DexScreener, upload guards (host allowlist, origin, type sniff), RPC method allowlist (8/8).
 
+- My Coins (/my-coins): coins whose Metaplex update authority = wallet (wallet token accounts + Meteora positions, any RPC), CA copy, DexScreener market data, position value, unclaimed fees + Claim fees (no service fee). Fixed: fully locked positions crashed listPositions (SDK refuses zero liquidityDelta).
+
 ## Left
 - Name = CoinCreator, domain coincreator.fun (owner 2026-10-06). Logo = Higgsfield cat+lightning mark (brand/).
 - Treasury wallet (`ops/wallet.sh new treasury` or owner's address) → `NEXT_PUBLIC_TREASURY`.

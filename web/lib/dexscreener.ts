@@ -16,9 +16,12 @@ const Pair = z.object({
   pairAddress: z.string(),
   url: z.string().optional(),
   baseToken: z.object({ address: z.string(), name: z.string(), symbol: z.string() }),
+  priceUsd: z.string().nullish(),
   marketCap: z.number().nullish(),
   fdv: z.number().nullish(),
   liquidity: z.object({ usd: z.number().nullish() }).nullish(),
+  volume: z.object({ h24: z.number().nullish() }).nullish(),
+  priceChange: z.object({ h24: z.number().nullish() }).nullish(),
   pairCreatedAt: z.number().nullish(),
   info: z
     .object({
@@ -106,4 +109,32 @@ export async function getTrending(limit = 30): Promise<CoinInfo[]> {
 export async function getCoin(address: string): Promise<CoinInfo | null> {
   const [pairs, listed] = await Promise.all([pairsFor([address]), listings().catch(() => new Map<string, z.infer<typeof Listing>>())]);
   return toCoin(address, pairs.get(address), listed.get(address));
+}
+
+export interface Market {
+  address: string;
+  priceUsd: number | null;
+  marketCap: number | null;
+  liquidityUsd: number | null;
+  volume24h: number | null;
+  change24h: number | null;
+  pairCreatedAt: number | null;
+  dexUrl: string;
+  imageUrl: string | null;
+}
+
+/** Live market data for up to 30 coins (most liquid pair each). Coins without a pair are omitted. */
+export async function getMarkets(addresses: string[]): Promise<Market[]> {
+  const pairs = await pairsFor(addresses.slice(0, 30));
+  return [...pairs.entries()].map(([address, p]) => ({
+    address,
+    priceUsd: p.priceUsd ? Number(p.priceUsd) : null,
+    marketCap: p.marketCap ?? p.fdv ?? null,
+    liquidityUsd: p.liquidity?.usd ?? null,
+    volume24h: p.volume?.h24 ?? null,
+    change24h: p.priceChange?.h24 ?? null,
+    pairCreatedAt: p.pairCreatedAt ?? null,
+    dexUrl: p.url ?? `https://dexscreener.com/solana/${address}`,
+    imageUrl: p.info?.imageUrl ?? null,
+  }));
 }

@@ -202,6 +202,26 @@ export function svmConnection(svm: LiteSVM, mainnet: Connection): SvmConn {
       }
       return { context: { slot }, value };
     },
+    /** jsonParsed flavour of getTokenAccountsByOwner (only the fields the app reads). */
+    async getParsedTokenAccountsByOwner(owner: PublicKey, filter: { programId?: PublicKey; mint?: PublicKey }) {
+      const { value } = await (conn as unknown as { getTokenAccountsByOwner: (o: PublicKey, f: typeof filter) => Promise<{ value: { pubkey: PublicKey; account: AccountInfo<Buffer> }[] }> }).getTokenAccountsByOwner(owner, filter);
+      return {
+        context: { slot },
+        value: value.map(({ pubkey, account }) => {
+          const mint = new PublicKey(account.data.subarray(0, 32));
+          const m = read(mint);
+          const decimals = m ? m.data[44] : 0;
+          const amount = account.data.readBigUInt64LE(64);
+          return {
+            pubkey,
+            account: { ...account, data: { program: "spl-token", space: 165, parsed: { type: "account", info: {
+              mint: mint.toBase58(), owner: owner.toBase58(),
+              tokenAmount: { amount: amount.toString(), decimals, uiAmount: Number(amount) / 10 ** decimals, uiAmountString: String(Number(amount) / 10 ** decimals) },
+            } } } },
+          };
+        }),
+      };
+    },
     /** Every account any recorded transaction touched, filtered like a node would (owner, dataSize, memcmp). */
     async getProgramAccounts(program: PublicKey, cfg?: { filters?: ({ dataSize: number } | { memcmp: { offset: number; bytes: string; encoding?: string } })[] } | string) {
       const filters = typeof cfg === "object" && cfg ? cfg.filters ?? [] : [];
