@@ -1,0 +1,15 @@
+node_modules/
+.next/
+out/
+dist/
+.vercel/
+.env
+.env.*
+!.env.example
+*.pw
+*keypair*.json
+id.json
+target/
+cache/
+broadcast/*/dry-run/
+.DS_Store
