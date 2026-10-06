@@ -6,7 +6,7 @@ import { useConnection } from "@solana/wallet-adapter-react";
 import { useAppWallet } from "@/lib/client/wallet";
 import { buildCreateCoinTx, coinFee } from "@/lib/chain/token";
 import { MAX_NAME, MAX_SYMBOL } from "@/lib/chain/metaplex";
-import { FEES, TREASURY, lamportsToSol } from "@/lib/config";
+import { FEES, lamportsToSol } from "@/lib/config";
 import { friendlyError, sendAndConfirm, solscanToken, solscanTx } from "@/lib/client/send";
 import type { CoinInfo } from "@/lib/dexscreener";
 import { Card3D } from "@/components/Card3D";
@@ -329,7 +329,6 @@ export function CreateCoinForm({ copy }: { copy?: string }) {
       </Card3D>
 
       {error && <Notice tone="error">{error}</Notice>}
-      {!TREASURY && <Notice>Preview mode: service fees are not charged.</Notice>}
     </form>
   );
 }

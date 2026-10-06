@@ -6,7 +6,7 @@ import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import { useConnection } from "@solana/wallet-adapter-react";
 import { useAppWallet } from "@/lib/client/wallet";
 import { FEE_TIERS, buildCreatePoolTx, tokenLabels } from "@/lib/chain/meteora";
-import { FEES, TREASURY, lamportsToSol } from "@/lib/config";
+import { FEES, lamportsToSol } from "@/lib/config";
 import { friendlyError, sendAndConfirm, solscanTx } from "@/lib/client/send";
 import { metadataImage } from "@/lib/client/token-image";
 import { Card3D } from "@/components/Card3D";
@@ -257,7 +257,6 @@ export function CreateLiquidityForm({ initialMint = "" }: { initialMint?: string
       </Card3D>
 
       {error && <Notice tone="error">{error}</Notice>}
-      {!TREASURY && <Notice>Preview mode: service fees are not charged.</Notice>}
     </form>
   );
 }

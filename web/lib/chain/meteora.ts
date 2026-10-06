@@ -45,7 +45,7 @@ export interface CreatePoolParams {
   lockLiquidity: boolean;
 }
 
-export async function buildCreatePoolTx(conn: Connection, p: CreatePoolParams, treasury = TREASURY) {
+export async function buildCreatePoolTx(conn: Connection, p: CreatePoolParams, treasury: PublicKey | null = TREASURY) {
   const info = await conn.getAccountInfo(p.tokenMint);
   if (!info) throw new Error("Token not found on Solana mainnet");
   const mint = unpackMint(p.tokenMint, info, info.owner);
@@ -202,7 +202,7 @@ export async function listPositions(conn: Connection, owner: PublicKey): Promise
 }
 
 /** Withdraws everything, claims fees and closes the position (refunds its rent). */
-export async function buildRemoveTx(conn: Connection, owner: PublicKey, p: UserPosition, treasury = TREASURY) {
+export async function buildRemoveTx(conn: Connection, owner: PublicKey, p: UserPosition, treasury: PublicKey | null = TREASURY) {
   const cpAmm = new CpAmm(conn);
   if (!p.positionState.vestedLiquidity.isZero() || !p.positionState.permanentLockedLiquidity.isZero())
     throw new Error("This position is locked and cannot be withdrawn");

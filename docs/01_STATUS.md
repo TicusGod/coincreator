@@ -11,13 +11,12 @@ Updated: 2026-10-06
 
 ## Left
 - Name = CoinCreator, domain coincreator.fun (owner 2026-10-06). Logo = Higgsfield cat+lightning mark (brand/).
-- Treasury wallet (`ops/wallet.sh new treasury` or owner's address) → `NEXT_PUBLIC_TREASURY`.
 - Create Coin = 0.3 SOL base, 0.5 SOL with revoke freeze + revoke mint (0.1 each) (owner 2026-10-06); options + liquidity fees still placeholders (env `NEXT_PUBLIC_FEE_*`).
 - Vercel project + env, then one real mainnet run with a tiny amount.
 - Not visually checked in a browser yet (no local server rule) — check on the first Vercel preview.
 
 ## Wallets (public addresses only — `ops/wallet.sh list`)
-- none yet
+- treasury `BQffuxULJy2qu4PfxuJt5Yj92rCU8wCDc7gfnFGmKGD5` (receives every service fee; default in web/lib/config.ts, keys ~/.copycat-keys)
 
 ## Keys the owner must provide (owner 2026-10-06: Privy + Helius + Pinata, keys coming)
 - `NEXT_PUBLIC_PRIVY_APP_ID` — Privy app; in the Privy dashboard allow the domains coincreator.fun + localhost:3123, enable email + Solana wallets.
@@ -26,5 +25,6 @@ Updated: 2026-10-06
 - Store with `printf %s "$V" | ops/secrets.sh set <service> <KEY>`.
 
 ## Risks
+- ipfs.io stopped serving files (2026): metadata uses IPFS_GATEWAY (dedicated Pinata gateway); never ship ipfs.io URIs.
 - Copy Coin clones other teams' names/images: user-generated, no trademark filter.
 - DexScreener rate limits (60/min boosts) — mitigated by 60 s cache.

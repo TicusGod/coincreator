@@ -1,7 +1,8 @@
 // Coin picture + metadata JSON on IPFS through Pinata (JWT). The image type is sniffed from bytes, never trusted.
 const PIN_FILE = "https://api.pinata.cloud/pinning/pinFileToIPFS";
 const PIN_JSON = "https://api.pinata.cloud/pinning/pinJSONToIPFS";
-const GATEWAY = process.env.IPFS_GATEWAY || "https://ipfs.io/ipfs/";
+// ipfs.io stopped serving files directly (2026); use the account's dedicated Pinata gateway via IPFS_GATEWAY.
+const GATEWAY = process.env.IPFS_GATEWAY || "https://gateway.pinata.cloud/ipfs/";
 
 export type ImageType = "image/png" | "image/jpeg" | "image/gif" | "image/webp";
 

@@ -33,7 +33,7 @@ export function coinFee(o: CoinOptions): number {
 }
 
 /** Returns an unsigned tx; the caller sends it with `mint` as an extra signer. */
-export async function buildCreateCoinTx(conn: Connection, p: CreateCoinParams, treasury = TREASURY) {
+export async function buildCreateCoinTx(conn: Connection, p: CreateCoinParams, treasury: PublicKey | null = TREASURY) {
   if (p.decimals < 0 || p.decimals > 9) throw new Error("Decimals must be between 0 and 9");
   const raw = p.supply * BigInt(10) ** BigInt(p.decimals);
   if (p.supply <= BigInt(0) || raw > BigInt("18446744073709551615")) throw new Error("Supply is out of range");
@@ -93,7 +93,7 @@ function withFee(tx: Transaction, owner: PublicKey, fee: number, treasury: Publi
   return tx;
 }
 
-export function buildRevokeMintTx(owner: PublicKey, mint: PublicKey, treasury = TREASURY) {
+export function buildRevokeMintTx(owner: PublicKey, mint: PublicKey, treasury: PublicKey | null = TREASURY) {
   const tx = new Transaction().add(
     ComputeBudgetProgram.setComputeUnitPrice({ microLamports: PRIORITY_MICRO_LAMPORTS }),
     createSetAuthorityInstruction(mint, owner, AuthorityType.MintTokens, null),
@@ -102,7 +102,7 @@ export function buildRevokeMintTx(owner: PublicKey, mint: PublicKey, treasury = 
 }
 
 /** Mints `amount` whole tokens (UI units, may have decimals) to the owner's wallet. */
-export function buildMintMoreTx(owner: PublicKey, mint: PublicKey, decimals: number, amount: string, treasury = TREASURY) {
+export function buildMintMoreTx(owner: PublicKey, mint: PublicKey, decimals: number, amount: string, treasury: PublicKey | null = TREASURY) {
   const [int, frac = ""] = amount.trim().split(".");
   if (!/^\d+$/.test(int || "") || !/^\d*$/.test(frac) || frac.length > decimals) throw new Error("Invalid amount");
   const raw = BigInt(int + frac.padEnd(decimals, "0"));
