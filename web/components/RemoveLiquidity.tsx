@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import { useConnection } from "@solana/wallet-adapter-react";
+import { useAppWallet } from "@/lib/client/wallet";
 import { buildRemoveTx, listPositions, type UserPosition } from "@/lib/chain/meteora";
 import { FEES, lamportsToSol } from "@/lib/config";
 import { friendlyError, sendAndConfirm, solscanTx } from "@/lib/client/send";
@@ -40,8 +40,7 @@ function Amount({ label, value, icon }: { label: string; value: string; icon: Re
 
 export function RemoveLiquidity() {
   const { connection } = useConnection();
-  const wallet = useWallet();
-  const { setVisible } = useWalletModal();
+  const wallet = useAppWallet();
   const [positions, setPositions] = useState<UserPosition[] | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -96,7 +95,7 @@ export function RemoveLiquidity() {
         </div>
         <h2 className="font-display text-lg font-semibold">Connect your wallet</h2>
         <p className="mt-1.5 text-sm text-muted">Use the wallet that created the pool.</p>
-        <Button className="mt-6" onClick={() => setVisible(true)}>Connect Wallet</Button>
+        <Button className="mt-6" onClick={() => wallet.connect()}>Connect Wallet</Button>
       </Card>
     );
   }

@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import { useConnection } from "@solana/wallet-adapter-react";
+import { useAppWallet } from "@/lib/client/wallet";
 import { FEE_TIERS, buildCreatePoolTx, tokenLabels } from "@/lib/chain/meteora";
 import { FEES, TREASURY, lamportsToSol } from "@/lib/config";
 import { friendlyError, sendAndConfirm, solscanTx } from "@/lib/client/send";
@@ -67,8 +67,7 @@ function AmountRow({ label, value, onChange, token, balance, onMax, onHalf }: {
 
 export function CreateLiquidityForm({ initialMint = "" }: { initialMint?: string }) {
   const { connection } = useConnection();
-  const wallet = useWallet();
-  const { setVisible } = useWalletModal();
+  const wallet = useAppWallet();
 
   const [mint, setMint] = useState(initialMint);
   const [tokenAmount, setTokenAmount] = useState("");
@@ -138,7 +137,7 @@ export function CreateLiquidityForm({ initialMint = "" }: { initialMint?: string
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (!wallet.publicKey) return setVisible(true);
+    if (!wallet.publicKey) return wallet.connect();
     if (!mintKey) return setError("Enter a valid token address.");
     if (!(t > 0) || !(s > 0)) return setError("Enter both a token amount and a SOL amount.");
     setBusy(true);

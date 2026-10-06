@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import { useConnection } from "@solana/wallet-adapter-react";
+import { useAppWallet } from "@/lib/client/wallet";
 import { buildMintMoreTx, buildRevokeMintTx, listMintableTokens, type MintableToken } from "@/lib/chain/token";
 import { tokenLabels } from "@/lib/chain/meteora";
 import { FEES, lamportsToSol } from "@/lib/config";
@@ -33,8 +33,7 @@ function TokenSelect({ tokens, value, onChange, loading }: { tokens: MintableTok
 
 export function TokenTools() {
   const { connection } = useConnection();
-  const wallet = useWallet();
-  const { setVisible } = useWalletModal();
+  const wallet = useAppWallet();
   const [tokens, setTokens] = useState<MintableToken[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [revokeMint, setRevokeMint] = useState("");
@@ -67,7 +66,7 @@ export function TokenTools() {
   }, [connection, wallet.publicKey]);
 
   async function run(kind: "revoke" | "mint") {
-    if (!wallet.publicKey) return setVisible(true);
+    if (!wallet.publicKey) return wallet.connect();
     const t = tokens?.find((x) => x.mint.toBase58() === (kind === "revoke" ? revokeMint : mintMint));
     if (!t) return setMsg({ tone: "error", text: "Select a token first." });
     setBusy(kind);

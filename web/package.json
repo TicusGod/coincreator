@@ -13,6 +13,11 @@
   },
   "dependencies": {
     "@meteora-ag/cp-amm-sdk": "^1.5.1",
+    "@privy-io/react-auth": "^3.45.0",
+    "@solana-program/memo": "^0.10.0",
+    "@solana-program/system": "^0.10.0",
+    "@solana-program/token": "^0.9.0",
+    "@solana/kit": "^5.5.1",
     "@solana/spl-token": "^0.4.15",
     "@solana/wallet-adapter-base": "^0.9.28",
     "@solana/wallet-adapter-react": "^0.15.40",

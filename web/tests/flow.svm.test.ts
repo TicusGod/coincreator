@@ -11,6 +11,8 @@ import { buildCreatePoolTx, buildRemoveTx, listPositions } from "@/lib/chain/met
 import { METADATA_PROGRAM_ID, metadataPda } from "@/lib/chain/metaplex";
 import { FEES } from "@/lib/config";
 import { svmConnection, type SvmConn } from "./support/svm-conn";
+import { sendAndConfirm } from "@/lib/client/send";
+import type { AppWallet } from "@/lib/client/wallet";
 
 const mainnet = new Connection(process.env.RPC_URL || "https://api.mainnet-beta.solana.com", "confirmed");
 const svm = new LiteSVM().withDefaultPrograms();
@@ -93,6 +95,24 @@ describe("full flow", () => {
     expect(unpackMint(kp.publicKey, (await conn.getAccountInfo(kp.publicKey))!).mintAuthority).toBeNull();
     expect(bal(treasury.publicKey) - before).toBe(FEES.mintMore + FEES.revokeMint);
     expect(() => buildMintMoreTx(owner.publicKey, kp.publicKey, 6, "1.1234567")).toThrow(/Invalid/);
+  });
+
+  it("app send path: extra keypair signs first, then the wallet (Privy order), via a serialized round-trip", async () => {
+    const wallet: AppWallet = {
+      ready: true, publicKey: owner.publicKey, label: "test", connect: () => {}, disconnect: async () => {},
+      // what Privy does: receives bytes, signs its slot, returns bytes
+      sign: async (tx) => {
+        const t = (await import("@solana/web3.js")).Transaction.from(tx.serialize({ requireAllSignatures: false, verifySignatures: false }));
+        t.partialSign(owner);
+        return t;
+      },
+    };
+    const { tx, mint: kp } = await buildCreateCoinTx(conn, {
+      owner: owner.publicKey, name: "Bridge", symbol: "BRG", uri: "https://x.y", decimals: 6, supply: 42n, revokeFreeze: true, revokeMint: true, revokeUpdate: false,
+    }, null);
+    const sig = await sendAndConfirm(wallet, conn, tx, [kp]);
+    expect(sig.length).toBeGreaterThan(40);
+    expect(tokens(kp.publicKey)).toBe(42_000_000n);
   });
 
   it("refuses a pool while the freeze authority is live", async () => {

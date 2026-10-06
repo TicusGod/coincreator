@@ -1,13 +1,15 @@
 // Wallet signs + sends; we confirm by polling (the RPC proxy is HTTP-only, no websocket).
 import type { Connection, Keypair, Transaction } from "@solana/web3.js";
-import type { WalletContextState } from "@solana/wallet-adapter-react";
+import type { AppWallet } from "@/lib/client/wallet";
 
-export async function sendAndConfirm(wallet: WalletContextState, conn: Connection, tx: Transaction, signers: Keypair[] = []): Promise<string> {
+export async function sendAndConfirm(wallet: AppWallet, conn: Connection, tx: Transaction, signers: Keypair[] = []): Promise<string> {
   if (!wallet.publicKey) throw new Error("Connect your wallet first");
   const { blockhash, lastValidBlockHeight } = await conn.getLatestBlockhash("confirmed");
   tx.recentBlockhash = blockhash;
   tx.feePayer = wallet.publicKey;
-  const signature = await wallet.sendTransaction(tx, conn, { signers, preflightCommitment: "confirmed", maxRetries: 3 });
+  if (signers.length) tx.partialSign(...signers);
+  const signed = await wallet.sign(tx);
+  const signature = await conn.sendRawTransaction(signed.serialize(), { preflightCommitment: "confirmed", maxRetries: 3 });
 
   for (;;) {
     const { value } = await conn.getSignatureStatuses([signature]);

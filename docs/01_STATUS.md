@@ -17,8 +17,11 @@ Updated: 2026-10-06
 ## Wallets (public addresses only — `ops/wallet.sh list`)
 - none yet
 
-## Keys the owner must provide
-- `RPC_URL` (keyed mainnet RPC, server only). `PINATA_JWT` exists in ~/.secrets/pinata.env.
+## Keys the owner must provide (owner 2026-10-06: Privy + Helius + Pinata, keys coming)
+- `NEXT_PUBLIC_PRIVY_APP_ID` — Privy app; in the Privy dashboard allow the domains coincreator.fun + localhost:3123, enable email + Solana wallets.
+- `RPC_URL` — Helius mainnet URL (server only, behind /api/rpc).
+- `PINATA_JWT` — owner's own key (an older one exists in ~/.secrets/pinata.env, not used unless told).
+- Store with `printf %s "$V" | ops/secrets.sh set <service> <KEY>`.
 
 ## Risks
 - Copy Coin clones other teams' names/images: user-generated, no trademark filter.

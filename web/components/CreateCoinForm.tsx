@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { useConnection, useWallet } from "@solana/wallet-adapter-react";
-import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import { useConnection } from "@solana/wallet-adapter-react";
+import { useAppWallet } from "@/lib/client/wallet";
 import { buildCreateCoinTx, coinFee } from "@/lib/chain/token";
 import { MAX_NAME, MAX_SYMBOL } from "@/lib/chain/metaplex";
 import { FEES, TREASURY, lamportsToSol } from "@/lib/config";
@@ -99,8 +99,7 @@ function Progress({ step }: { step: Step }) {
 
 export function CreateCoinForm({ copy }: { copy?: string }) {
   const { connection } = useConnection();
-  const wallet = useWallet();
-  const { setVisible } = useWalletModal();
+  const wallet = useAppWallet();
 
   const [form, setForm] = useState<Form>(EMPTY);
   const [file, setFile] = useState<File | null>(null);
@@ -158,7 +157,7 @@ export function CreateCoinForm({ copy }: { copy?: string }) {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (!wallet.publicKey) return setVisible(true);
+    if (!wallet.publicKey) return wallet.connect();
     const decimals = Number(form.decimals);
     if (!form.name.trim() || !form.symbol.trim()) return setError("Name and symbol are required.");
     if (!Number.isInteger(decimals) || decimals < 0 || decimals > 9) return setError("Decimals must be between 0 and 9.");
