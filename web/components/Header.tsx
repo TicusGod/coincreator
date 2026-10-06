@@ -3,30 +3,19 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { Coins, DropletOff, Droplets, Mail, TrendingUp } from "lucide-react";
 import { WalletButton } from "@/components/WalletButton";
+import { TelegramLogo, XLogo } from "@/components/icons";
 import { site } from "@/lib/site-config";
 
 
 
-const I = {
-  coin: <path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18Zm0 4v10m-3-7.5c0-1 1.3-1.8 3-1.8s3 .8 3 1.8-1.3 1.7-3 1.7-3 .8-3 1.8 1.3 1.8 3 1.8 3-.8 3-1.8" />,
-  add: <path d="M12 3.5c3 3.6 5.5 6.6 5.5 9.6a5.5 5.5 0 0 1-11 0c0-3 2.5-6 5.5-9.6ZM12 11v5m-2.5-2.5h5" />,
-  remove: <path d="M12 3.5c3 3.6 5.5 6.6 5.5 9.6a5.5 5.5 0 0 1-11 0c0-3 2.5-6 5.5-9.6ZM9.5 13.5h5M4 4l16 16" />,
-  copy: <path d="M13 2 4 14h7l-1 8 9-12h-7z" />,
-};
-
 export const NAV = [
-  { href: "/", label: "Create Coin", icon: I.coin },
-  { href: "/create-liquidity", label: "Create Liquidity", icon: I.add },
-  { href: "/remove-liquidity", label: "Remove Liquidity", icon: I.remove },
-  { href: "/copy-trending", label: "Copy Trending", icon: I.copy },
+  { href: "/", label: "Create Coin", icon: Coins },
+  { href: "/create-liquidity", label: "Create Liquidity", icon: Droplets },
+  { href: "/remove-liquidity", label: "Remove Liquidity", icon: DropletOff },
+  { href: "/copy-trending", label: "Copy Trending", icon: TrendingUp },
 ] as const;
-
-const Svg = ({ children, size = 17 }: { children: React.ReactNode; size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    {children}
-  </svg>
-);
 
 export function Logo() {
   return (
@@ -64,11 +53,13 @@ function NavItems({ onPick }: { onPick?: () => void }) {
           >
             {active && <span className="absolute -left-4 top-1/2 h-6 w-1 -translate-y-1/2 rounded-r-full bg-brand" />}
             <span
-              className={`grid h-9 w-9 place-items-center rounded-xl transition ${
-                active ? "bg-brand text-white shadow-[0_8px_20px_-8px_rgba(245,75,0,.8)]" : "field text-muted group-hover:text-sun"
+              className={`relative grid h-10 w-10 shrink-0 place-items-center rounded-xl transition duration-300 ${
+                active
+                  ? "bg-brand text-white shadow-[0_10px_24px_-8px_rgba(245,75,0,.85),inset_0_1px_0_rgba(255,255,255,.35)]"
+                  : "border border-white/[.07] bg-gradient-to-b from-white/[.06] to-white/[.01] text-muted shadow-[inset_0_1px_0_rgba(255,255,255,.06)] group-hover:border-ember/40 group-hover:text-sun group-hover:shadow-[0_0_18px_-6px_rgba(245,75,0,.7)]"
               }`}
             >
-              <Svg>{n.icon}</Svg>
+              <n.icon size={19} strokeWidth={1.9} />
             </span>
             {n.label}
           </Link>
@@ -78,22 +69,12 @@ function NavItems({ onPick }: { onPick?: () => void }) {
   );
 }
 
-const Mail = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="5" width="18" height="14" rx="3" /><path d="m4 7 8 6 8-6" /></svg>
-);
-const X = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>
-);
-const Tg = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20m4.6 6.8-1.6 7.6c-.1.5-.4.7-.9.4l-2.5-1.8-1.2 1.1c-.1.1-.3.3-.6.3l.2-2.6 4.7-4.3c.2-.2 0-.3-.3-.1L8.6 13l-2.5-.8c-.5-.2-.5-.5.1-.8l9.8-3.8c.4-.1.8.1.6 1.2" /></svg>
-);
-
 /** Support contacts from site.config.json (email, telegram, x); renders only what is set. */
 export function Contact() {
   const links = [
-    site.email && { href: `mailto:${site.email}`, label: site.email, icon: <Mail /> },
-    site.telegram && { href: site.telegram, label: "Telegram", icon: <Tg /> },
-    site.x && { href: site.x, label: "X", icon: <X /> },
+    site.email && { href: `mailto:${site.email}`, label: site.email, icon: <Mail size={17} strokeWidth={1.9} /> },
+    site.telegram && { href: site.telegram, label: "Telegram", icon: <TelegramLogo /> },
+    site.x && { href: site.x, label: "X", icon: <XLogo /> },
   ].filter(Boolean) as { href: string; label: string; icon: React.ReactNode }[];
   if (!links.length) return null;
   return (

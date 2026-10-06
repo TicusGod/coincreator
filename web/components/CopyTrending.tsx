@@ -6,23 +6,25 @@ import type { CoinInfo } from "@/lib/dexscreener";
 import { age, usd } from "@/lib/format";
 import { Notice, Segmented, TokenAvatar } from "@/components/ui";
 import { Card3D } from "@/components/Card3D";
+import { ChartCandlestick, Globe } from "lucide-react";
+import { TelegramLogo, XLogo } from "@/components/icons";
 
-const Icon = {
-  dex: <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 3 6v6c0 5 3.8 9.4 9 10 5.2-.6 9-5 9-10V6zm-3 9h2v5H9zm4-3h2v8h-2z" /></svg>,
-  x: <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" /></svg>,
-  tg: <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20m4.6 6.8-1.6 7.6c-.1.5-.4.7-.9.4l-2.5-1.8-1.2 1.1c-.1.1-.3.3-.6.3l.2-2.6 4.7-4.3c.2-.2 0-.3-.3-.1L8.6 13l-2.5-.8c-.5-.2-.5-.5.1-.8l9.8-3.8c.4-.1.8.1.6 1.2" /></svg>,
-  web: <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c2.5 3 2.5 15 0 18M12 3c-2.5 3-2.5 15 0 18" /></svg>,
-};
+const LINK_STYLE = {
+  dex: "hover:text-[#4ade80] hover:border-[#4ade80]/40",
+  web: "hover:text-sun hover:border-sun/40",
+  x: "hover:text-white hover:border-white/30",
+  tg: "hover:text-[#2aabee] hover:border-[#2aabee]/40",
+} as const;
 
 type Sort = "trending" | "mcap" | "new";
 
 function CoinCard({ c, rank, now }: { c: CoinInfo; rank: number; now: number }) {
   const links = [
-    { href: c.dexUrl, icon: Icon.dex, label: "DexScreener" },
-    c.website && { href: c.website, icon: Icon.web, label: "Website" },
-    c.twitter && { href: c.twitter, icon: Icon.x, label: "X" },
-    c.telegram && { href: c.telegram, icon: Icon.tg, label: "Telegram" },
-  ].filter(Boolean) as { href: string; icon: React.ReactNode; label: string }[];
+    { href: c.dexUrl, icon: <ChartCandlestick size={16} strokeWidth={1.9} />, label: "DexScreener", style: LINK_STYLE.dex },
+    c.website && { href: c.website, icon: <Globe size={16} strokeWidth={1.9} />, label: "Website", style: LINK_STYLE.web },
+    c.twitter && { href: c.twitter, icon: <XLogo size={14} />, label: "X", style: LINK_STYLE.x },
+    c.telegram && { href: c.telegram, icon: <TelegramLogo size={16} />, label: "Telegram", style: LINK_STYLE.tg },
+  ].filter(Boolean) as { href: string; icon: React.ReactNode; label: string; style: string }[];
   const fresh = c.pairCreatedAt && now - c.pairCreatedAt < 6 * 3600_000;
 
   return (
@@ -58,7 +60,8 @@ function CoinCard({ c, rank, now }: { c: CoinInfo; rank: number; now: number }) 
               target="_blank"
               rel="noreferrer"
               aria-label={l.label}
-              className="grid h-8 w-8 place-items-center rounded-lg border border-line bg-surface-2/60 text-muted transition hover:border-line-hi hover:text-text"
+              title={l.label}
+              className={`grid h-9 w-9 place-items-center rounded-xl border border-white/[.07] bg-gradient-to-b from-white/[.06] to-white/[.01] text-muted shadow-[inset_0_1px_0_rgba(255,255,255,.06)] transition hover:-translate-y-0.5 ${l.style}`}
             >
               {l.icon}
             </a>
