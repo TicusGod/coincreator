@@ -4,7 +4,7 @@ import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, TextareaHTML
 export function PageTitle({ eyebrow, title, accent, subtitle, align = "left" }: { eyebrow?: string; title: string; accent?: string; subtitle?: string; align?: "left" | "center" }) {
   const center = align === "center";
   return (
-    <div className={`rise mb-8 ${center ? "text-center" : "mx-auto max-w-[680px]"}`}>
+    <div className={`rise mb-8 ${center ? "text-center" : ""}`}>
       {eyebrow && (
         <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/[.07] bg-white/[.03] px-3 py-1 text-[11px] font-semibold uppercase tracking-[.14em] text-muted">
           <span className="h-1.5 w-1.5 rounded-full bg-brand shadow-[0_0_10px_2px_rgba(245,75,0,.6)]" />
@@ -219,8 +219,26 @@ export function ExternalLink({ href, children }: { href: string; children: React
 }
 
 /** Orion-style long-form help under a tool: headings + paragraphs + numbered steps. */
+/** Help column: beside the tool on wide screens (Orion layout), below it on mobile. */
 export function Explainer({ children }: { children: ReactNode }) {
-  return <article className="prose-cc mx-auto mt-16 max-w-[680px] border-t border-white/[.06] pt-6">{children}</article>;
+  return (
+    <article className="prose-cc mt-14 border-t border-white/[.06] pt-4 xl:mt-0 xl:border-0 xl:pt-0 [&>h2:first-child]:!mt-0">
+      {children}
+    </article>
+  );
+}
+
+/** Orion layout: title, then tool on the left and explanations on the right (stacked on mobile). */
+export function ToolLayout({ title, tool, aside, toolWidth = 680 }: { title: ReactNode; tool: ReactNode; aside: ReactNode; toolWidth?: number }) {
+  return (
+    <>
+      {title}
+      <div className="grid items-start gap-x-12 xl:grid-cols-[var(--tool-w)_minmax(0,1fr)]" style={{ "--tool-w": `minmax(0,${toolWidth}px)` } as React.CSSProperties}>
+        <div className="grid min-w-0 gap-0 [&>*]:!mx-0">{tool}</div>
+        {aside}
+      </div>
+    </>
+  );
 }
 
 export function Steps({ items }: { items: ReactNode[] }) {

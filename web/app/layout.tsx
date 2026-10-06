@@ -31,9 +31,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <Providers>
             <Header />
             <div className="flex min-h-[calc(100dvh-4rem)] flex-col lg:min-h-[calc(100dvh-5rem)] lg:pl-[264px]">
-              <main className="mx-auto w-full max-w-6xl flex-1 px-4 pb-16 pt-6 sm:pt-10 lg:px-10">{children}</main>
+              <main className="mx-auto w-full max-w-[1320px] flex-1 px-4 pb-16 pt-6 sm:pt-10 lg:px-10">{children}</main>
               <footer className="border-t border-white/[.05]">
-                <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-4 py-6 text-xs text-dim sm:flex-row lg:px-10">
+                <div className="mx-auto flex max-w-[1320px] flex-col items-center justify-between gap-2 px-4 py-6 text-xs text-dim sm:flex-row lg:px-10">
                   <span>All transactions are final. We never hold your keys or your coins.</span>
                   <span>
                     © {new Date().getFullYear()} {site.name}.fun · Liquidity by <span className="font-semibold text-brand">Meteora</span>

@@ -147,7 +147,7 @@ export function CopyTrending() {
         </div>
       </div>
       {error && <div className="mb-4"><Notice tone="error">{error}</Notice></div>}
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         {shown === null && Array.from({ length: 6 }, (_, i) => <div key={i} className="skeleton h-[248px] rounded-[20px]" />)}
         {shown?.map(({ c, rank }) => <CoinCard key={c.address} c={c} rank={rank} now={now} />)}
       </div>

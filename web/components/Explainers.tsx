@@ -37,7 +37,7 @@ export function CreateCoinExplainer() {
       <h3>Revoke Mint Authority</h3>
       <p>
         Revoking the mint authority guarantees that no more tokens can ever be created beyond the total supply. Buyers look for it before they ape. The cost is {sol(FEES.revokeMint)}. You can
-        also keep it and revoke it later from <strong>Manage your coin</strong> above.
+        also keep it and revoke it later in <strong>Manage your coin</strong>, under the form.
       </p>
 
       <h3>Revoke Update Authority</h3>
