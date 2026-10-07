@@ -1,20 +1,12 @@
 // Shared UI primitives (one file: they are always used together).
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from "react";
 
-export function PageTitle({ eyebrow, title, accent, subtitle, align = "center" }: { eyebrow?: string; title: string; accent?: string; subtitle?: string; align?: "left" | "center" }) {
-  const center = align === "center";
+/** Page heading in the reference style: plain white, bold, centered. */
+export function PageTitle({ title, accent, subtitle }: { eyebrow?: string; title: string; accent?: string; subtitle?: string; align?: "left" | "center" }) {
   return (
-    <div className={`rise mb-10 ${center ? "text-center" : ""}`}>
-      {eyebrow && (
-        <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/[.07] bg-white/[.03] px-3 py-1 text-[11px] font-semibold uppercase tracking-[.14em] text-muted">
-          <span className="h-1.5 w-1.5 rounded-full bg-brand shadow-[0_0_10px_2px_rgba(245,75,0,.6)]" />
-          {eyebrow}
-        </span>
-      )}
-      <h1 className="font-display text-[36px] font-extrabold leading-[1.08] tracking-tight sm:text-[54px]">
-        {title} {accent && <span className="text-brand">{accent}</span>}
-      </h1>
-      {subtitle && <p className={`mt-4 max-w-xl text-[16px] leading-relaxed text-muted ${center ? "mx-auto" : ""}`}>{subtitle}</p>}
+    <div className="rise mb-8 pt-4 text-center">
+      <h1 className="text-3xl font-bold tracking-tight text-text">{accent ? `${title} ${accent}` : title}</h1>
+      {subtitle && <p className="mx-auto mt-3 max-w-xl text-[15px] leading-relaxed text-dim">{subtitle}</p>}
     </div>
   );
 }

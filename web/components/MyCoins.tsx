@@ -250,7 +250,7 @@ export function MyCoins() {
       <Card highlight className="rise py-10 text-center">
         <h2 className="font-display text-lg font-bold">Connect your wallet</h2>
         <p className="mt-1.5 text-sm text-muted">Use the wallet you created your coins with.</p>
-        <Button className="mt-6" onClick={wallet.connect}>Select Wallet</Button>
+        <Button className="mt-6" onClick={wallet.connect}>Connect Wallet</Button>
       </Card>
     );
   }

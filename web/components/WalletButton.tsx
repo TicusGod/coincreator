@@ -16,11 +16,11 @@ export function WalletButton() {
     return () => document.removeEventListener("mousedown", close);
   }, [open]);
 
-  if (!w.ready) return <div className="skeleton h-10 w-[132px] rounded-xl" />;
+  if (!w.ready) return <div className="skeleton h-9 w-[124px] rounded-[10px]" />;
 
   if (!w.publicKey) {
     return (
-      <button onClick={w.connect} className="btn-brand h-10 rounded-xl px-4 font-display text-sm font-bold transition active:scale-[.98]">
+      <button onClick={w.connect} className="wallet-btn">
         Connect Wallet
       </button>
     );
@@ -29,13 +29,13 @@ export function WalletButton() {
   const addr = w.publicKey.toBase58();
   return (
     <div ref={ref} className="relative">
-      <button onClick={() => setOpen((o) => !o)} className="field flex h-10 items-center gap-2 rounded-xl pl-2 pr-3 text-sm font-semibold transition hover:border-ember/40">
-        <span className="h-6 w-6 rounded-lg bg-brand" />
+      <button onClick={() => setOpen((o) => !o)} className="wallet-btn connected">
+        <span className="h-2 w-2 rounded-full bg-[#86efac]" />
         <span className="font-mono">{addr.slice(0, 4)}…{addr.slice(-4)}</span>
         <svg className={`text-muted transition ${open ? "rotate-180" : ""}`} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="m6 9 6 6 6-6" /></svg>
       </button>
       {open && (
-        <div className="card-3d-soft rise absolute right-0 top-12 z-50 w-56 p-1.5">
+        <div className="card-3d-soft rise absolute right-0 top-11 z-50 w-56 p-1.5">
           {w.label && <div className="px-3 py-2 text-[11px] uppercase tracking-wider text-dim">Connected with {w.label}</div>}
           <button
             onClick={() => navigator.clipboard?.writeText(addr).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1200); })}

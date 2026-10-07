@@ -84,7 +84,7 @@ export function TokenTools() {
     }
   }
 
-  const cta = (label: string) => (wallet.publicKey ? label : "Select Wallet");
+  const cta = (label: string) => (wallet.publicKey ? label : "Connect Wallet");
 
   return (
     <section id="manage" className="mx-auto mt-14 w-full max-w-[680px] scroll-mt-24">
