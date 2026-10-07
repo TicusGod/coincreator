@@ -17,6 +17,8 @@ export interface CoinOptions {
   revokeFreeze: boolean;
   revokeMint: boolean;
   revokeUpdate: boolean;
+  /** Creator name/website written into the metadata JSON (paid option). */
+  modifyCreator?: boolean;
 }
 
 export interface CreateCoinParams extends CoinOptions {
@@ -29,7 +31,13 @@ export interface CreateCoinParams extends CoinOptions {
 }
 
 export function coinFee(o: CoinOptions): number {
-  return FEES.createCoin + (o.revokeFreeze ? FEES.revokeFreeze : 0) + (o.revokeMint ? FEES.revokeMint : 0) + (o.revokeUpdate ? FEES.revokeUpdate : 0);
+  return (
+    FEES.createCoin +
+    (o.revokeFreeze ? FEES.revokeFreeze : 0) +
+    (o.revokeMint ? FEES.revokeMint : 0) +
+    (o.revokeUpdate ? FEES.revokeUpdate : 0) +
+    (o.modifyCreator ? FEES.modifyCreator : 0)
+  );
 }
 
 /** Returns an unsigned tx; the caller sends it with `mint` as an extra signer. */

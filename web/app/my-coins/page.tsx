@@ -1,15 +1,14 @@
 import { MyCoins } from "@/components/MyCoins";
 import { TokenTools } from "@/components/TokenTools";
-import { PageTitle } from "@/components/ui";
 
 export default function MyCoinsPage() {
   return (
-    <>
-      <PageTitle title="My" accent="Coins" subtitle="Your coins, their contract address, live market cap, and the swap fees waiting for you." />
-      <div className="mx-auto w-full max-w-[860px]">
+    <section className="min-h-screen px-4 pb-20 pt-12 sm:px-8">
+      <div className="mx-auto max-w-3xl">
+        <h1 className="mb-8 text-center text-3xl font-bold tracking-tight text-[#fafafa]">My Coins</h1>
         <MyCoins />
         <TokenTools />
       </div>
-    </>
+    </section>
   );
 }

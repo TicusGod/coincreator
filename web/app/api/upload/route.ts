@@ -16,6 +16,9 @@ const Fields = z.object({
   website: url,
   twitter: url,
   telegram: url,
+  discord: url,
+  creatorName: z.string().trim().max(64).optional().or(z.literal("").transform(() => undefined)),
+  creatorWebsite: url,
   imageUrl: z.string().url().optional(),
 });
 

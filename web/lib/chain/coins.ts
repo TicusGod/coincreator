@@ -100,3 +100,35 @@ export async function findMyCoins(conn: Connection, owner: PublicKey): Promise<M
     })
     .filter((c): c is MyCoin => c !== null);
 }
+
+export interface WalletToken {
+  mint: string;
+  symbol: string;
+  name: string;
+  uri: string;
+  balance: number; // UI units
+  decimals: number;
+}
+
+/** Every SPL / Token-2022 token the wallet holds (non-zero), with Metaplex labels, for the pool token picker. */
+export async function listWalletTokens(conn: Connection, owner: PublicKey): Promise<WalletToken[]> {
+  const [{ tokenLabels }, spl, t22] = await Promise.all([
+    import("./meteora"),
+    conn.getParsedTokenAccountsByOwner(owner, { programId: TOKEN_PROGRAM_ID }),
+    conn.getParsedTokenAccountsByOwner(owner, { programId: new PublicKey("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEuFX6Gq") }).catch(() => ({ value: [] })),
+  ]);
+  const held = new Map<string, { balance: number; decimals: number }>();
+  for (const a of [...spl.value, ...t22.value]) {
+    const info = a.account.data.parsed.info;
+    const ui = Number(info.tokenAmount.uiAmount ?? 0);
+    if (ui <= 0 || info.tokenAmount.decimals === 0) continue; // skip NFTs (position NFTs included)
+    const cur = held.get(info.mint);
+    held.set(info.mint, { balance: (cur?.balance ?? 0) + ui, decimals: info.tokenAmount.decimals });
+  }
+  const mints = [...held.keys()];
+  if (!mints.length) return [];
+  const labels = await tokenLabels(conn, mints.map((m) => new PublicKey(m)));
+  return mints
+    .map((mint, i) => ({ mint, ...labels[i], ...held.get(mint)! }))
+    .sort((a, b) => Number(!!b.uri) - Number(!!a.uri) || b.balance - a.balance);
+}

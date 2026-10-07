@@ -13,6 +13,7 @@ export const FEES = {
   revokeMint: sol(process.env.NEXT_PUBLIC_FEE_REVOKE_MINT_SOL, 0.1),
   revokeUpdate: sol(process.env.NEXT_PUBLIC_FEE_REVOKE_UPDATE_SOL, 0.1),
   mintMore: sol(process.env.NEXT_PUBLIC_FEE_MINT_MORE_SOL, 0.1),
+  modifyCreator: sol(process.env.NEXT_PUBLIC_FEE_MODIFY_CREATOR_SOL, 0.1),
   createLiquidity: sol(process.env.NEXT_PUBLIC_FEE_CREATE_LIQUIDITY_SOL, 0.2),
   removeLiquidity: sol(process.env.NEXT_PUBLIC_FEE_REMOVE_LIQUIDITY_SOL, 0.05),
 } as const;

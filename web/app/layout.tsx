@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Inter } from "next/font/google";
 import { Banner } from "@/components/Banner";
 import { Header } from "@/components/Header";
+import { Toaster } from "@/components/Toaster";
 import { Providers } from "@/components/Providers";
 import { site } from "@/lib/site-config";
 import "./globals.css";
@@ -24,15 +25,19 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body>
         <SiteGate>
           <Providers>
-            <div className="app-shell">
+            <div className="min-h-screen bg-[#111113] text-[#fafafa]">
+              <Toaster />
               <Banner />
               <Header />
-              <main className="app-content">
-                {children}
-                <footer className="mt-16 pb-2 text-center text-[11px] text-dim">
-                  All transactions are final. We never hold your keys or your coins · © {new Date().getFullYear()} coincreator.fun
-                </footer>
-              </main>
+              <main>{children}</main>
+              <footer className="px-4 pb-8 pt-4 text-center text-[11px] text-[#696e77]">
+                All transactions are final. We never hold your keys or your coins.
+                {site.email && (
+                  <>
+                    {" "}· <a href={`mailto:${site.email}`} className="hover:text-[#b0b4ba]">{site.email}</a>
+                  </>
+                )}
+              </footer>
             </div>
           </Providers>
         </SiteGate>

@@ -201,26 +201,53 @@ export async function listPositions(conn: Connection, owner: PublicKey): Promise
   });
 }
 
-/** Withdraws everything, claims fees and closes the position (refunds its rent). */
-export async function buildRemoveTx(conn: Connection, owner: PublicKey, p: UserPosition, treasury: PublicKey | null = TREASURY) {
+/**
+ * Withdraws `percent` of the unlocked liquidity. 100 % also claims fees and closes the position (refunds its rent);
+ * a partial withdraw keeps the position open. 5 % slippage guard on the quoted amounts.
+ */
+export async function buildRemoveTx(conn: Connection, owner: PublicKey, p: UserPosition, percent = 100, treasury: PublicKey | null = TREASURY) {
+  if (!(percent > 0 && percent <= 100)) throw new Error("Choose how much liquidity to remove");
   const cpAmm = new CpAmm(conn);
-  if (!p.positionState.vestedLiquidity.isZero() || !p.positionState.permanentLockedLiquidity.isZero())
-    throw new Error("This position is locked and cannot be withdrawn");
-  const [vestings, currentPoint] = await Promise.all([
+  const ps = p.positionState;
+  if (ps.unlockedLiquidity.isZero()) throw new Error("This position is locked and cannot be withdrawn");
+  const full = percent === 100 && ps.vestedLiquidity.isZero() && ps.permanentLockedLiquidity.isZero();
+  const [vestingRows, currentPoint] = await Promise.all([
     cpAmm.getAllVestingsByPosition(p.position),
     getCurrentPoint(conn, p.poolState.activationType),
   ]);
-  const built = await cpAmm.removeAllLiquidityAndClosePosition({
-    owner,
-    position: p.position,
-    positionNftAccount: p.positionNftAccount,
-    poolState: p.poolState,
-    positionState: p.positionState,
-    tokenAAmountThreshold: p.minOutA,
-    tokenBAmountThreshold: p.minOutB,
-    vestings: vestings.map((v) => ({ account: v.publicKey, vestingState: v.account })),
-    currentPoint,
-  });
+  const vestings = vestingRows.map((v) => ({ account: v.publicKey, vestingState: v.account }));
+  const s = p.poolState;
+  const pct = (b: BN) => b.muln(percent).divn(100);
+
+  const built = full
+    ? await cpAmm.removeAllLiquidityAndClosePosition({
+        owner,
+        position: p.position,
+        positionNftAccount: p.positionNftAccount,
+        poolState: s,
+        positionState: ps,
+        tokenAAmountThreshold: p.minOutA,
+        tokenBAmountThreshold: p.minOutB,
+        vestings,
+        currentPoint,
+      })
+    : await cpAmm.removeLiquidity({
+        owner,
+        position: p.position,
+        pool: p.pool,
+        positionNftAccount: p.positionNftAccount,
+        liquidityDelta: pct(ps.unlockedLiquidity),
+        tokenAAmountThreshold: pct(p.minOutA),
+        tokenBAmountThreshold: pct(p.minOutB),
+        tokenAMint: s.tokenAMint,
+        tokenBMint: s.tokenBMint,
+        tokenAVault: s.tokenAVault,
+        tokenBVault: s.tokenBVault,
+        tokenAProgram: getTokenProgram(s.tokenAFlag),
+        tokenBProgram: getTokenProgram(s.tokenBFlag),
+        vestings,
+        currentPoint,
+      });
   const tx = new Transaction().add(
     ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
     ComputeBudgetProgram.setComputeUnitPrice({ microLamports: PRIORITY_MICRO_LAMPORTS }),

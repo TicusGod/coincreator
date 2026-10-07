@@ -80,10 +80,15 @@ describe("full flow", () => {
     expect(p.symbol).toBe("cAt");
     expect(p.locked).toBe(false);
     expect(Number(p.outSol)).toBeGreaterThan(1.99);
+    // 50 % first: position stays open with half the liquidity
+    await send(await buildRemoveTx(conn, owner.publicKey, p, 50, treasury.publicKey));
+    const half = (await listPositions(conn, owner.publicKey))[0];
+    expect(Number(half.outSol)).toBeGreaterThan(0.99);
+    expect(Number(half.outSol)).toBeLessThan(1.01);
     const solBefore = bal(owner.publicKey);
-    await send(await buildRemoveTx(conn, owner.publicKey, p, treasury.publicKey));
+    await send(await buildRemoveTx(conn, owner.publicKey, half, 100, treasury.publicKey));
     expect(tokens(mint)).toBeGreaterThan(999_000_000n * 1_000_000n);
-    expect(bal(owner.publicKey) - solBefore).toBeGreaterThan(1.9 * LAMPORTS_PER_SOL);
+    expect(bal(owner.publicKey) - solBefore).toBeGreaterThan(0.9 * LAMPORTS_PER_SOL);
     expect(await listPositions(conn, owner.publicKey)).toHaveLength(0);
   });
 

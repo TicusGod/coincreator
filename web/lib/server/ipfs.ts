@@ -21,6 +21,9 @@ export interface CoinMeta {
   website?: string;
   twitter?: string;
   telegram?: string;
+  discord?: string;
+  creatorName?: string;
+  creatorWebsite?: string;
 }
 
 async function pin(jwt: string, url: string, body: BodyInit, json: boolean): Promise<string> {
@@ -47,8 +50,10 @@ export async function storeCoin(bytes: Uint8Array, type: ImageType, meta: CoinMe
     ...(meta.website ? { website: meta.website } : {}),
     ...(meta.twitter ? { twitter: meta.twitter } : {}),
     ...(meta.telegram ? { telegram: meta.telegram } : {}),
+    ...(meta.discord ? { discord: meta.discord } : {}),
   };
-  const content = { name: meta.name, symbol: meta.symbol, description: meta.description, image, ...socials, extensions: socials };
+  const creator = meta.creatorName || meta.creatorWebsite ? { creator: { ...(meta.creatorName ? { name: meta.creatorName } : {}), ...(meta.creatorWebsite ? { site: meta.creatorWebsite } : {}) } } : {};
+  const content = { name: meta.name, symbol: meta.symbol, description: meta.description, image, ...socials, extensions: socials, ...creator };
   const cid = await pin(jwt, PIN_JSON, JSON.stringify({ pinataContent: content, pinataOptions: { cidVersion: 1 } }), true);
   return { uri: GATEWAY + cid, image };
 }

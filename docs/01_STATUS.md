@@ -9,6 +9,8 @@ Updated: 2026-10-06
 
 - My Coins (/my-coins): coins whose Metaplex update authority = wallet (wallet token accounts + Meteora positions, any RPC), CA copy, DexScreener market data, position value, unclaimed fees + Claim fees (no service fee). Fixed: fully locked positions crashed listPositions (SDK refuses zero liquidityDelta).
 
+- 2026-10-07 UI = owner's coincreate-main.zip (audited, see docs/ZIP_AUDIT.md): top header + marquee banner, 3-step token form, 1-click Copy Trending (mints at once), Liquidity page (token picker, 50/90/Max, Your Pools, claim, remove 25/50/75/100 %), rocket logo. Partial remove tested in LiteSVM.
+
 ## Left
 - Name = CoinCreator, domain coincreator.fun (owner 2026-10-06). Logo = Higgsfield cat+lightning mark (brand/).
 - Create Coin = 0.3 SOL base, 0.5 SOL with revoke freeze + revoke mint (0.1 each) (owner 2026-10-06); options + liquidity fees still placeholders (env `NEXT_PUBLIC_FEE_*`).

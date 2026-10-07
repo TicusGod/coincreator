@@ -3,83 +3,85 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { ArrowLeftRight, Coins, Flame, LayoutGrid, Mail, Menu, X, Zap } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import { WalletButton } from "@/components/WalletButton";
-import { TelegramLogo, XLogo } from "@/components/icons";
-import { site } from "@/lib/site-config";
 
 export const NAV = [
-  { href: "/", label: "Token Creator", icon: Coins },
-  { href: "/liquidity", label: "Liquidity", icon: ArrowLeftRight },
-  { href: "/copy-trending", label: "Copy Trending", icon: Flame, hot: true },
-  { href: "/my-coins", label: "My Coins", icon: LayoutGrid },
+  { href: "/", label: "Create Coin" },
+  { href: "/liquidity", label: "Liquidity" },
+  { href: "/copy-trending", label: "Copy Trending", hot: true },
+  { href: "/my-coins", label: "My Coins" },
 ] as const;
 
-function Brand() {
-  return (
-    <Link href="/" className="brand-row">
-      <span className="brand-mark">
-        <span className="brand-orbit" />
-        <Zap size={15} className="fill-current" />
-      </span>
-      <span className="brand-name">
-        coin<strong>creator</strong>.fun
-      </span>
-    </Link>
-  );
-}
+const Hot = ({ floating }: { floating?: boolean }) => (
+  <span
+    className={`${floating ? "absolute -right-1 -top-1.5" : ""} rounded-[2px] bg-[#ef4444] px-1 py-px text-[9px] font-bold uppercase leading-none tracking-wide text-white`}
+  >
+    hot
+  </span>
+);
 
-function Contact() {
-  const links = [
-    site.email && { href: `mailto:${site.email}`, label: site.email, icon: <Mail size={20} strokeWidth={1.7} /> },
-    site.telegram && { href: site.telegram, label: "Telegram", icon: <TelegramLogo size={18} /> },
-    site.x && { href: site.x, label: "X", icon: <XLogo size={16} /> },
-  ].filter(Boolean) as { href: string; label: string; icon: React.ReactNode }[];
-  return (
-    <div className="sidebar-footer">
-      <p>Need support? Contact us</p>
-      <div className="contact-links">
-        {links.map((l) => (
-          <a key={l.href} href={l.href} target={l.href.startsWith("mailto:") ? undefined : "_blank"} rel="noreferrer" title={l.label} aria-label={l.label}>
-            {l.icon}
-          </a>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-/** Reference shell: fixed sidebar (top bar + drawer on mobile) and the floating wallet button. */
+/** Reference header: logo, centred tabs, wallet + hamburger on mobile. */
 export function Header() {
   const path = usePathname();
   const [open, setOpen] = useState(false);
+  const isActive = (href: string) => (href === "/" ? path === "/" : path.startsWith(href));
 
   return (
-    <>
-      <aside className={`sidebar ${open ? "sidebar-open" : ""}`}>
-        <div className="flex items-center">
-          <Brand />
-          <button className="mobile-menu-button" aria-label="Menu" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-            {open ? <X size={22} /> : <Menu size={22} />}
+    <header className="sticky top-0 z-50 border-b border-[#212225] bg-[#111113]/95 backdrop-blur-sm">
+      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+        <Link href="/" className="flex shrink-0 items-center gap-2" aria-label="Home">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-[10px]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/logo.svg" alt="" width={44} height={44} className="h-full w-full object-contain" />
+          </span>
+        </Link>
+
+        <nav className="hidden items-center gap-1 md:flex">
+          {NAV.map((n) => (
+            <Link
+              key={n.href}
+              href={n.href}
+              className={`relative flex h-8 items-center rounded-[10px] px-3 text-sm font-medium transition-all duration-150 ${
+                isActive(n.href) ? "bg-[#212225] text-[#fafafa]" : "text-[#b0b4ba] hover:bg-[#212225] hover:text-[#fafafa]"
+              }`}
+            >
+              {n.label}
+              {"hot" in n && <Hot floating />}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="flex items-center gap-2">
+          <WalletButton />
+          <button
+            aria-label="Menu"
+            aria-expanded={open}
+            onClick={() => setOpen((o) => !o)}
+            className="flex h-9 w-9 items-center justify-center rounded-[10px] text-[#b0b4ba] transition-all duration-150 hover:bg-[#212225] hover:text-[#fafafa] md:hidden"
+          >
+            {open ? <X size={18} /> : <Menu size={18} />}
           </button>
         </div>
-        <nav className="sidebar-nav">
-          {NAV.map((n) => {
-            const active = n.href === "/" ? path === "/" : path.startsWith(n.href);
-            return (
-              <Link key={n.href} href={n.href} onClick={() => setOpen(false)} className={`nav-item ${active ? "active" : ""}`}>
-                <span className="nav-icon"><n.icon size={15} strokeWidth={2} /></span>
-                <span className="nav-label">
-                  {n.label}
-                  {"hot" in n && <span className="nav-hot">HOT</span>}
-                </span>
-              </Link>
-            );
-          })}
-        </nav>
-        <Contact />
-      </aside>
-      <div className="desktop-wallet"><WalletButton /></div>
-    </>
+      </div>
+
+      {open && (
+        <div className="flex flex-col gap-1 border-t border-[#212225] bg-[#111113] px-4 py-3 md:hidden">
+          {NAV.map((n) => (
+            <Link
+              key={n.href}
+              href={n.href}
+              onClick={() => setOpen(false)}
+              className={`flex h-10 items-center gap-2 rounded-[10px] px-3 text-left text-sm font-medium transition-all duration-150 ${
+                isActive(n.href) ? "bg-[#212225] text-[#fafafa]" : "text-[#b0b4ba] hover:bg-[#212225] hover:text-[#fafafa]"
+              }`}
+            >
+              {n.label}
+              {"hot" in n && <Hot />}
+            </Link>
+          ))}
+        </div>
+      )}
+    </header>
   );
 }

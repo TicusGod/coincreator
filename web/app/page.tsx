@@ -1,19 +1,19 @@
 import { CreateCoinForm } from "@/components/CreateCoinForm";
 
-const BASE58 = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
-
-export default async function Home({ searchParams }: PageProps<"/">) {
-  const { copy } = await searchParams;
-  const address = typeof copy === "string" && BASE58.test(copy) ? copy : undefined;
+export default function Home() {
   return (
-    <div className="creator-layout">
-      <section className="creator-intro">
-        <h1 className="creator-title">{address ? "Copy This Coin" : "Launch Your Own Coin"}</h1>
-        <p className="intro-copy">
-          {address ? "Everything is pre-filled from the original. Edit what you want and launch your version." : "Launch your own token on Solana in seconds. No coding required."}
-        </p>
-        <CreateCoinForm key={address ?? "new"} copy={address} />
+    <>
+      <section className="relative overflow-hidden px-4 pb-8 pt-16">
+        <div className="relative z-10 mx-auto max-w-4xl text-center">
+          <h1 className="mb-4 text-4xl font-bold leading-tight tracking-tight text-[#fafafa] sm:text-5xl lg:text-6xl">Launch Your Own Coin</h1>
+          <p className="mx-auto max-w-xl text-base leading-relaxed text-[#696e77] sm:text-lg">Launch your own token on Solana in seconds. No coding required.</p>
+        </div>
       </section>
-    </div>
+      <section className="px-4 pb-16">
+        <div className="mx-auto max-w-2xl">
+          <CreateCoinForm />
+        </div>
+      </section>
+    </>
   );
 }
