@@ -12,8 +12,8 @@ const mono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url ?? "https://coincreator.fun"),
-  title: `${site.name} — Create & copy Solana coins on Meteora`,
-  description: "Create a Solana coin, add Meteora liquidity, or copy a trending coin in one click.",
+  title: "coincreator.fun",
+  description: "Launch your own Solana coin in seconds. Meteora liquidity in 1 click, copy any trending coin.",
 };
 
 export const viewport: Viewport = { themeColor: "#111113" };
