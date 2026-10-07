@@ -15,6 +15,8 @@ export const site = raw as {
   email: string | null;
   telegram: string | null;
   banner: string | null;
+  /** Launch promo: create fee is createFeeSol until endsAt, then regularCreateFeeSol (the banner disappears). */
+  promo: { createFeeSol: number; regularCreateFeeSol: number; endsAt: string } | null;
 };
 
 const EXPLORERS: Record<Chain, (addr: string) => string> = {

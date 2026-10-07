@@ -184,12 +184,11 @@ export function CopyTrending() {
       <section className="min-h-screen bg-[#111113] px-4 pb-20 pt-12 sm:px-8">
         <div className="mx-auto max-w-6xl">
           <h1 className="mb-8 text-center text-3xl font-bold tracking-tight text-[#fafafa]">Copy Trending Coins in 1 Click</h1>
-          <div className="mb-6 flex items-center justify-between gap-4">
-            <p className="text-xs text-[#696e77]">Same name, ticker, image and socials · 1B supply · freeze, mint &amp; update revoked · {COPY_FEE} SOL</p>
+          <div className="mb-6 flex items-center justify-end">
             <button
               onClick={refresh}
               aria-label="Refresh"
-              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] bg-[#212225] transition-all duration-150 hover:bg-[#272a2d] active:translate-y-px"
+              className="flex h-9 w-9 items-center justify-center rounded-[10px] bg-[#212225] transition-all duration-150 hover:bg-[#272a2d] active:translate-y-px"
             >
               <RefreshCw size={15} className={`text-[#b0b4ba] ${refreshing ? "animate-spin" : ""}`} />
             </button>

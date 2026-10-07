@@ -25,19 +25,16 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body>
         <SiteGate>
           <Providers>
-            <div className="min-h-screen bg-[#111113] text-[#fafafa]">
+            <div className="app-shell">
               <Toaster />
               <Banner />
               <Header />
-              <main>{children}</main>
-              <footer className="px-4 pb-8 pt-4 text-center text-[11px] text-[#696e77]">
-                All transactions are final. We never hold your keys or your coins.
-                {site.email && (
-                  <>
-                    {" "}· <a href={`mailto:${site.email}`} className="hover:text-[#b0b4ba]">{site.email}</a>
-                  </>
-                )}
-              </footer>
+              <main className="app-content">
+                {children}
+                <footer className="mt-16 pb-2 text-center text-[11px] text-dim">
+                  All transactions are final. We never hold your keys or your coins · © {new Date().getFullYear()} coincreator.fun
+                </footer>
+              </main>
             </div>
           </Providers>
         </SiteGate>

@@ -10,7 +10,7 @@ import {
   createSetAuthorityInstruction,
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
-import { FEES, PRIORITY_MICRO_LAMPORTS, TREASURY } from "@/lib/config";
+import { FEES, PRIORITY_MICRO_LAMPORTS, TREASURY, createCoinFee } from "@/lib/config";
 import { createMetadataV3Ix } from "./metaplex";
 
 export interface CoinOptions {
@@ -32,9 +32,9 @@ export interface CreateCoinParams extends CoinOptions {
   flatFee?: number;
 }
 
-export function coinFee(o: CoinOptions): number {
+export function coinFee(o: CoinOptions, now = Date.now()): number {
   return (
-    FEES.createCoin +
+    createCoinFee(now) +
     (o.revokeFreeze ? FEES.revokeFreeze : 0) +
     (o.revokeMint ? FEES.revokeMint : 0) +
     (o.revokeUpdate ? FEES.revokeUpdate : 0) +

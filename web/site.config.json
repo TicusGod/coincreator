@@ -8,5 +8,10 @@
   "logo": "/brand/logo.png",
   "email": "support@coincreator.fun",
   "telegram": null,
-  "banner": "Launch your coin for {fee} \u00b7 Meteora liquidity in 1 click \u00b7 Copy any trending coin"
+  "banner": "⚠️ LAST CHANCE: {fee} CREATE COIN FEE (BACK TO {regular} IN {hours}H)",
+  "promo": {
+    "createFeeSol": 0.1,
+    "regularCreateFeeSol": 0.2,
+    "endsAt": "2026-10-08T11:00:00Z"
+  }
 }
