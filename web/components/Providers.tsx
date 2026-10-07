@@ -14,7 +14,6 @@ const PRIVY_APP_ID = process.env.NEXT_PUBLIC_PRIVY_APP_ID;
 
 function privyConfig(rpcUrl: string): PrivyClientConfig {
   return {
-    loginMethods: ["email", "wallet"],
     loginMethodsAndOrder: { primary: ["email", "phantom"], overflow: ["detected_solana_wallets", "wallet_connect_qr_solana"] },
     appearance: {
       theme: "dark",
