@@ -467,7 +467,7 @@ export default function TokenForm({ onGoToLiquidity }: { onGoToLiquidity: (mint:
                     <img
                       src={form.imagePreview}
                       alt="preview"
-                      className="w-16 h-16 rounded-full object-cover border border-[#212225]"
+                      className="max-w-[160px] max-h-[120px] w-auto h-auto rounded-[10px] object-contain border border-[#212225] bg-[#18191b]"
                     />
                     <p className="text-[#696e77] text-sm">{form.image?.name}</p>
                     <p className="text-[#363a3f] text-xs">Click to change</p>
