@@ -160,6 +160,21 @@ describe("full flow", () => {
     expect(after.positions[0].hasFees).toBe(false);
   });
 
+  it("default treasury on create + pool + remove is the owner's wallet", async () => {
+    const { TREASURY } = await import("@/lib/config");
+    const before = bal(TREASURY);
+    const { tx, mint: kp } = await buildCreateCoinTx(conn, {
+      owner: owner.publicKey, name: "Fees", symbol: "FEE", uri: "https://x.y", decimals: 6, supply: 1_000_000n, revokeFreeze: true, revokeMint: true, revokeUpdate: false,
+    });
+    await send(tx, [kp]);
+    const pool = await buildCreatePoolTx(conn, { owner: owner.publicKey, tokenMint: kp.publicKey, tokenAmount: "900000", solAmount: "1", feeBps: 100, lockLiquidity: false });
+    await send(pool.tx, [pool.positionNft]);
+    const p = (await listPositions(conn, owner.publicKey)).find((x) => x.tokenMint.equals(kp.publicKey))!;
+    await send(await buildRemoveTx(conn, owner.publicKey, p, 100));
+    expect(TREASURY.toBase58()).toBe("5cnTSUAhPEfqEx9VDgfkDWsN1uf7Bc4p5eQFE6MyapPz");
+    expect(bal(TREASURY) - before).toBe(coinFee({ revokeFreeze: true, revokeMint: true, revokeUpdate: false }) + FEES.createLiquidity + FEES.removeLiquidity);
+  });
+
   it("refuses a pool while the freeze authority is live", async () => {
     const { tx, mint: kp } = await buildCreateCoinTx(conn, {
       owner: owner.publicKey, name: "Frozen", symbol: "FRZ", uri: "https://x.y", decimals: 6, supply: 1000n, revokeFreeze: false, revokeMint: false, revokeUpdate: true,

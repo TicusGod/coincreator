@@ -18,8 +18,8 @@ export const FEES = {
   removeLiquidity: sol(process.env.NEXT_PUBLIC_FEE_REMOVE_LIQUIDITY_SOL, 0.05),
 } as const;
 
-/** Where fees go: the project's own treasury (keys in ~/.copycat-keys), overridable with NEXT_PUBLIC_TREASURY. */
-const DEFAULT_TREASURY = "BQffuxULJy2qu4PfxuJt5Yj92rCU8wCDc7gfnFGmKGD5";
+/** Where every service fee goes: the owner's wallet (2026-10-07). NEXT_PUBLIC_TREASURY can override it. */
+const DEFAULT_TREASURY = "5cnTSUAhPEfqEx9VDgfkDWsN1uf7Bc4p5eQFE6MyapPz";
 export const TREASURY: PublicKey = new PublicKey(process.env.NEXT_PUBLIC_TREASURY || DEFAULT_TREASURY);
 
 export const PRIORITY_MICRO_LAMPORTS = 50_000;

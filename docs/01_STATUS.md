@@ -18,7 +18,7 @@ Updated: 2026-10-06
 - Not visually checked in a browser yet (no local server rule) — check on the first Vercel preview.
 
 ## Wallets (public addresses only — `ops/wallet.sh list`)
-- treasury `BQffuxULJy2qu4PfxuJt5Yj92rCU8wCDc7gfnFGmKGD5` (receives every service fee; default in web/lib/config.ts, keys ~/.copycat-keys)
+- **fees → owner wallet `5cnTSUAhPEfqEx9VDgfkDWsN1uf7Bc4p5eQFE6MyapPz`** (owner 2026-10-07; default in web/lib/config.ts). Old project treasury BQffux… never received anything, unused.
 
 ## Keys (vault ~/.secrets/coincreator.env → `ops/secrets.sh use coincreator`)
 - PINATA_JWT / PINATA_API_KEY / PINATA_API_SECRET — owner's coincreator Pinata account (given 2026-10-07, verified). Account shows no dedicated gateway → IPFS_GATEWAY unset, default gateway.pinata.cloud (works, ~5 s, rate-limited). Owner to create a dedicated gateway and send the domain.
