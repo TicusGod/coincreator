@@ -81,7 +81,8 @@ export async function payServiceFee(params: {
     payerKey: payer,
     recentBlockhash: blockhash,
     instructions: [
-      ComputeBudgetProgram.setComputeUnitLimit({ units: 30_000 }),
+      // Transfer + memo use ~31k compute units: keep headroom so wallets can simulate it.
+      ComputeBudgetProgram.setComputeUnitLimit({ units: 80_000 }),
       SystemProgram.transfer({ fromPubkey: payer, toPubkey: env.getTreasury(), lamports: missing }),
       new TransactionInstruction({
         programId: MEMO_PROGRAM_ID,
