@@ -9,7 +9,8 @@
    - **Copy Trending** — DexScreener top boosts + latest profiles (Solana), enriched with pairs (mcap, pair age, image, socials) → "Copy Coin" opens Create Coin prefilled; the picture is re-pinned to IPFS server-side.
    Removed vs Orion (owner, 2026-10-06): Swap, Burn, Burn & Earn, Leaderboard, the "Leaderboard is live" banner.
 4. Architecture: A) **chosen** — everything signed client-side in the user's wallet, fees = SOL transfer to the treasury inside the same tx; Vercel routes only for DexScreener (60 s cache), Pinata upload, RPC proxy (key hidden). B) backend on the VPS building txs — rejected, nothing needs server state. No program of our own.
-5. Programs used: SPL Token, Metaplex Token Metadata (metaq…), Meteora DAMM v2 (cpamd…). Nothing to deploy.
+5. **No database** (owner 2026-10-07): every page reads the connected wallet on chain — Liquidity lists all its SPL / Token-2022 tokens, Your Pools and My Coins come from its Meteora positions and Metaplex update authority. Nothing stored server-side.
+6. Programs used: SPL Token, Metaplex Token Metadata (metaq…), Meteora DAMM v2 (cpamd…). Nothing to deploy.
 6. Web routes: `/` Create Coin (`?copy=<mint>`), `/create-liquidity` (`?mint=`), `/remove-liquidity`, `/copy-trending`; API `/api/trending`, `/api/coin/[address]`, `/api/upload`, `/api/rpc`.
 7. Brand direction: matches the owner's Copy Trending screen — #111113 background, #18181b cards, mint-green #6ef2a8 accent, orange pair age.
 8. Launch sequence: treasury wallet → Vercel env → deploy → one real create + pool + remove with a small amount.

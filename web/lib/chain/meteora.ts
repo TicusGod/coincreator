@@ -130,7 +130,9 @@ export interface UserPosition {
 
 /** Reads name/symbol/uri from Metaplex metadata; falls back to a short mint. */
 export async function tokenLabels(conn: Connection, mints: PublicKey[]): Promise<{ name: string; symbol: string; uri: string }[]> {
-  const infos = await conn.getMultipleAccountsInfo(mints.map(metadataPda));
+  const pdas = mints.map(metadataPda);
+  const infos: Awaited<ReturnType<Connection["getMultipleAccountsInfo"]>> = [];
+  for (let i = 0; i < pdas.length; i += 100) infos.push(...(await conn.getMultipleAccountsInfo(pdas.slice(i, i + 100)))); // RPC cap: 100 per call
   const readStr = (d: Buffer, o: number) => {
     const len = d.readUInt32LE(o);
     return { s: d.subarray(o + 4, o + 4 + len).toString("utf8").replace(/\0/g, "").trim(), next: o + 4 + len };

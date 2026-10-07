@@ -23,6 +23,11 @@ export async function POST(req: Request) {
   if (calls.length > 20 || !calls.every((c) => c && typeof c === "object" && ALLOWED.has((c as { method?: string }).method ?? "")))
     return Response.json({ error: "method not allowed" }, { status: 403 });
 
-  const res = await fetch(upstream, { method: "POST", headers: { "content-type": "application/json" }, body: text, signal: AbortSignal.timeout(20_000) });
-  return new Response(await res.text(), { status: res.status, headers: { "content-type": "application/json", "cache-control": "no-store" } });
+  try {
+    const res = await fetch(upstream, { method: "POST", headers: { "content-type": "application/json" }, body: text, signal: AbortSignal.timeout(25_000) });
+    return new Response(await res.text(), { status: res.status, headers: { "content-type": "application/json", "cache-control": "no-store" } });
+  } catch {
+    // Upstream slow or down: answer like a node would so the client shows a clean error instead of crashing.
+    return Response.json({ jsonrpc: "2.0", id: null, error: { code: -32000, message: "RPC is busy, please try again." } }, { status: 504 });
+  }
 }
