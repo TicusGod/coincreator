@@ -20,11 +20,11 @@ Updated: 2026-10-06
 ## Wallets (public addresses only — `ops/wallet.sh list`)
 - treasury `BQffuxULJy2qu4PfxuJt5Yj92rCU8wCDc7gfnFGmKGD5` (receives every service fee; default in web/lib/config.ts, keys ~/.copycat-keys)
 
-## Keys the owner must provide (owner 2026-10-06: Privy + Helius + Pinata, keys coming)
-- `NEXT_PUBLIC_PRIVY_APP_ID` — Privy app; in the Privy dashboard allow the domains coincreator.fun + localhost:3123, enable email + Solana wallets.
-- `RPC_URL` — Helius mainnet URL (server only, behind /api/rpc).
-- `PINATA_JWT` — owner's own key (an older one exists in ~/.secrets/pinata.env, not used unless told).
-- Store with `printf %s "$V" | ops/secrets.sh set <service> <KEY>`.
+## Keys (vault ~/.secrets/coincreator.env → `ops/secrets.sh use coincreator`)
+- PINATA_JWT / PINATA_API_KEY / PINATA_API_SECRET — owner's coincreator Pinata account (given 2026-10-07, verified). Account shows no dedicated gateway → IPFS_GATEWAY unset, default gateway.pinata.cloud (works, ~5 s, rate-limited). Owner to create a dedicated gateway and send the domain.
+- RPC_URL — Helius mainnet (verified; server-side only, behind /api/rpc).
+- Still missing: NEXT_PUBLIC_PRIVY_APP_ID.
+- Keys were pasted in chat on 2026-10-07 → owner should rotate them before launch.
 
 ## Risks
 - ipfs.io stopped serving files (2026): metadata uses IPFS_GATEWAY (dedicated Pinata gateway); never ship ipfs.io URIs.
