@@ -1,0 +1,206 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    font-family: 'Inter', Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    scrollbar-gutter: stable;
+  }
+
+  /* Bolt menu scale (was zoom 1.25 on large screens) */
+  body {
+    zoom: 1.1;
+  }
+
+  body {
+    background-color: #111113;
+    color: #fafafa;
+    min-height: 100vh;
+  }
+
+  input, textarea, select, button {
+    font-family: inherit;
+  }
+
+  ::selection {
+    background-color: rgba(134, 239, 172, 0.2);
+    color: #fafafa;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #111113;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #272a2d;
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #363a3f;
+  }
+}
+
+@keyframes dex-shimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.dex-shimmer {
+  background: linear-gradient(
+    105deg,
+    transparent 40%,
+    rgba(134, 239, 172, 0.12) 50%,
+    transparent 60%
+  );
+  background-size: 200% 100%;
+  animation: dex-shimmer 2s linear infinite;
+  border-radius: inherit;
+}
+
+/* Liquidity modals */
+@keyframes liqu-modal-backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes liqu-modal-backdrop-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes liqu-modal-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes liqu-modal-panel-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+}
+
+.modal-backdrop-in {
+  animation: liqu-modal-backdrop-in 0.2s ease-out both;
+}
+.modal-backdrop-out {
+  animation: liqu-modal-backdrop-out 0.15s ease-in both;
+}
+.modal-panel-in {
+  animation: liqu-modal-panel-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.modal-panel-out {
+  animation: liqu-modal-panel-out 0.15s ease-in both;
+}
+
+/* Solana wallet-adapter modal: center in viewport (fixed overlay is not a flex item) */
+.wallet-adapter-modal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.wallet-adapter-modal-container {
+  margin: 0 !important;
+  min-height: unset !important;
+  width: 100%;
+  max-width: 400px;
+  flex: 0 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wallet-adapter-modal-wrapper {
+  flex: 0 1 auto !important;
+  width: 100%;
+  max-height: min(calc(100dvh - 2rem), calc(100vh - 2rem));
+  overflow-y: auto;
+}
+
+/* ---------- Bolt menu (sidebar, banner, wallet button, content panel) — copied from the Bolt project ---------- */
+.announcement-banner { position: fixed; z-index: 30; top: 0; left: 0; right: 0; height: 32px; display: flex; align-items: center; background: #132a1d !important; border: 0 !important; padding: 0 !important; }
+.announcement-banner > div { width: 100%; }
+.announcement-banner p, .announcement-banner span { color: #86e8a3; font-size: 12px; line-height: 1; }
+.app-shell { min-height: 100vh; background: radial-gradient(circle at 63% 48%, rgba(134, 239, 172, .08), transparent 34%), #111113; color: #fafafa; }
+.app-shell::before { content: ''; position: fixed; z-index: 10; top: 32px; left: 220px; right: 0; height: 100px; background: #18191b; pointer-events: none; }
+.sidebar { position: fixed; z-index: 20; top: 32px; left: 0; bottom: 0; width: 220px; background: #18191b; padding: 16px 10px 22px; display: flex; flex-direction: column; overflow: visible; overscroll-behavior: contain; }
+.brand-row { display: flex; align-items: center; gap: 8px; height: 40px; padding-left: 10px; flex: 0 0 auto; }
+.brand-name { font-size: 21px; font-weight: 700; letter-spacing: -.6px; white-space: nowrap; color: #fafafa; }
+.brand-mark { position: relative; width: 28px; height: 30px; display: grid; place-items: center; color: #86efac; font-size: 15px; }
+.sidebar-nav { display: flex; flex-direction: column; gap: 7px; margin-top: 28px; }
+.nav-item { position: relative; display: flex; align-items: center; gap: 9px; min-height: 42px; padding: 0 11px; border: 0; border-radius: 10px; background: transparent; color: #c4c8d0; font-size: 13px; font-weight: 600; text-align: left; transition: .2s ease; cursor: pointer; }
+.nav-item.active { color: #f4f4f5; box-shadow: none; }
+.nav-item:hover, .nav-item.active { background: #212225; }
+.nav-item.active .nav-icon, .nav-item:hover .nav-icon { color: #86efac; }
+.nav-label { position: relative; }
+.nav-hot { position: absolute; top: -9px; right: -18px; padding: 2px 4px; border-radius: 3px; background: #ff4d5d; color: #fff; font-size: 9px; font-weight: 800; line-height: 1; box-shadow: 0 2px 6px rgba(255, 77, 93, .28); }
+.nav-icon { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 7px; color: #86efac; background: #292e38; }
+.sidebar-footer { margin-top: auto; text-align: center; color: #b0b4ba; font-size: 11px; }
+.sidebar-footer p { margin: 0 0 10px; }
+.sidebar-footer a { display: grid; place-items: center; width: 40px; height: 36px; margin: 0 auto; border: 0; background: transparent; color: #fafafa; }
+.desktop-wallet-wrap { position: fixed; z-index: 21; top: 48px; right: 25px; }
+.desktop-wallet { height: 36px; padding: 0 16px; display: flex; align-items: center; gap: 8px; border: 0; border-radius: 10px; background: #86efac; color: #052e16; font-size: 12px; font-weight: 600; transition: background .15s; cursor: pointer; }
+.desktop-wallet:hover { background: #bbf7d0; }
+.desktop-wallet-menu { position: absolute; right: 0; top: calc(100% + 4px); width: 208px; padding: 4px 0; border: 1px solid #272a2d; border-radius: 12px; background: #18191b; box-shadow: 0 8px 32px rgba(0, 0, 0, .45); }
+.desktop-wallet-menu button { display: block; width: 100%; padding: 12px 16px; border: 0; background: transparent; color: #fafafa; font-size: 14px; font-weight: 700; text-align: left; cursor: pointer; }
+.desktop-wallet-menu button:hover { background: #212225; }
+.mobile-menu-button { display: none; }
+.app-content { position: fixed; z-index: 11; top: 100px; right: 0; bottom: 0; left: 220px; min-height: 0; padding: 28px 48px; overflow-x: hidden; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #292e38 #111113; border-radius: 32px 0 0; background: #111113; background-clip: padding-box; }
+.app-content::-webkit-scrollbar { width: 8px; }
+.app-content::-webkit-scrollbar-track { background: #111113; }
+.app-content::-webkit-scrollbar-thumb { background: #292e38; border-radius: 8px; }
+.app-content::-webkit-scrollbar-thumb:hover { background: #86efac; }
+@media (max-width: 900px) { .app-content { padding: 55px 28px 28px; } }
+@media (max-width: 620px) {
+  .app-shell::before { display: none; }
+  .sidebar { width: 100%; height: 58px; top: 31px; bottom: auto; padding: 10px 16px; }
+  .brand-row { padding-left: 0; }
+  .mobile-menu-button { display: grid; place-items: center; margin-left: auto; border: 0; background: transparent; color: #b0b4ba; }
+  .sidebar-nav { display: none; }
+  .sidebar-open { height: calc(100vh - 32px); }
+  .sidebar-open .sidebar-nav { display: flex; flex-direction: column; margin-top: 22px; }
+  .desktop-wallet-wrap { display: none !important; }
+  .sidebar-footer { display: none; }
+  .sidebar-open .desktop-wallet-wrap { display: block !important; position: fixed !important; top: auto !important; bottom: 24px; left: 16px; right: 16px; max-width: 320px; margin: 0 auto; z-index: 22; }
+  .sidebar-open .desktop-wallet { width: 100%; height: 44px; border-radius: 12px; font-size: 14px; justify-content: center; }
+  .app-content { position: static; margin: 90px 0 0; min-height: calc(100vh - 90px); padding: 34px 16px 28px; border-top-left-radius: 26px; overflow: visible; background: #111113; }
+}
