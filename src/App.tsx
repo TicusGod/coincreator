@@ -35,17 +35,16 @@ export default function App() {
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
-    document.querySelector('.app-content')?.scrollTo({ top: 0, left: 0, behavior: 'auto' });
   }, [currentPage]);
 
   return (
-    <div className="app-shell">
+    <div className="min-h-screen bg-[#111113] text-[#fafafa]">
       <WalletStoreSync />
       <Toaster position="bottom-right" toastOptions={{ duration: 5000 }} />
       <AnnouncementBanner />
       <Header currentPage={currentPage} onPageChange={setCurrentPage} />
 
-      <main className="app-content">
+      <main>
         {currentPage === 'create' ? (
           <>
             <HeroBanner />

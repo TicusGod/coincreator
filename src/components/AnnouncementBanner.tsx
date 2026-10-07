@@ -5,7 +5,7 @@ export default function AnnouncementBanner() {
   const text = `⚠️ LAST CHANCE: ${fee} SOL CREATE COIN FEE (BACK TO 0.2 SOL IN 24H)`;
 
   return (
-    <div className="announcement-banner bg-[#166534]/30 border-b border-[#166534]/40 py-2 overflow-hidden">
+    <div className="bg-[#166534]/30 border-b border-[#166534]/40 py-2 overflow-hidden">
       {/* Desktop: static centered */}
       <div className="hidden sm:flex max-w-6xl mx-auto px-4 items-center justify-center">
         <p className="text-[#86efac] text-xs font-semibold tracking-wide text-center">
