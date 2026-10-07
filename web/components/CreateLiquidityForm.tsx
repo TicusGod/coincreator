@@ -178,7 +178,7 @@ export function CreateLiquidityForm({ initialMint = "" }: { initialMint?: string
   const symbol = info?.symbol ?? "TOKEN";
 
   return (
-    <form onSubmit={submit} className="rise mx-auto grid w-full max-w-[520px] grid-cols-[minmax(0,1fr)] gap-4">
+    <form onSubmit={submit} className="rise mx-auto grid w-full max-w-[540px] grid-cols-[minmax(0,1fr)] gap-4">
       <Card3D className="grid grid-cols-[minmax(0,1fr)] gap-4 p-5 sm:p-8">
         <Field label="Token address" hint={mintKey && !info ? "Looking up token…" : undefined}>
           <div className="relative">

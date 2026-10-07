@@ -1,20 +1,20 @@
 // Shared UI primitives (one file: they are always used together).
 import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from "react";
 
-export function PageTitle({ eyebrow, title, accent, subtitle, align = "left" }: { eyebrow?: string; title: string; accent?: string; subtitle?: string; align?: "left" | "center" }) {
+export function PageTitle({ eyebrow, title, accent, subtitle, align = "center" }: { eyebrow?: string; title: string; accent?: string; subtitle?: string; align?: "left" | "center" }) {
   const center = align === "center";
   return (
-    <div className={`rise mb-8 ${center ? "text-center" : ""}`}>
+    <div className={`rise mb-10 ${center ? "text-center" : ""}`}>
       {eyebrow && (
         <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/[.07] bg-white/[.03] px-3 py-1 text-[11px] font-semibold uppercase tracking-[.14em] text-muted">
           <span className="h-1.5 w-1.5 rounded-full bg-brand shadow-[0_0_10px_2px_rgba(245,75,0,.6)]" />
           {eyebrow}
         </span>
       )}
-      <h1 className="font-display text-[32px] font-extrabold leading-[1.1] tracking-tight sm:text-[42px]">
+      <h1 className="font-display text-[36px] font-extrabold leading-[1.08] tracking-tight sm:text-[54px]">
         {title} {accent && <span className="text-brand">{accent}</span>}
       </h1>
-      {subtitle && <p className={`mt-3 max-w-xl text-[15px] leading-relaxed text-muted ${center ? "mx-auto" : ""}`}>{subtitle}</p>}
+      {subtitle && <p className={`mt-4 max-w-xl text-[16px] leading-relaxed text-muted ${center ? "mx-auto" : ""}`}>{subtitle}</p>}
     </div>
   );
 }
@@ -33,10 +33,10 @@ export function SectionLabel({ children, right }: { children: ReactNode; right?:
   );
 }
 
-export function Field({ label, hint, right, children }: { label: string; hint?: ReactNode; right?: ReactNode; children: ReactNode }) {
+export function Field({ label, hint, right, center, children }: { label: string; hint?: ReactNode; right?: ReactNode; center?: boolean; children: ReactNode }) {
   return (
     <label className="block">
-      <span className="mb-2 flex items-center justify-between font-display text-[13px] font-bold text-text">
+      <span className={`mb-2 flex items-center font-display text-[13px] font-bold text-text ${center ? "justify-center" : "justify-between"}`}>
         {label}
         {right}
       </span>
@@ -62,12 +62,12 @@ export function Switch({ checked }: { checked: boolean }) {
   );
 }
 
-export function Toggle({ checked, onChange, title, text, price, badge }: {
-  checked: boolean; onChange: (v: boolean) => void; title: string; text: string; price?: string; badge?: string;
+export function Toggle({ checked, onChange, title, text, price, badge, center }: {
+  checked: boolean; onChange: (v: boolean) => void; title: string; text: string; price?: string; badge?: string; center?: boolean;
 }) {
   return (
-    <div className="flex flex-col">
-      <div className="flex flex-wrap items-baseline gap-x-2 font-display text-[15px] font-bold">
+    <div className={`flex flex-col ${center ? "text-center" : ""}`}>
+      <div className={`flex flex-wrap items-baseline gap-x-2 font-display text-[15px] font-bold ${center ? "justify-center" : ""}`}>
         {title}
         {badge && <span className="text-[10px] font-semibold text-sun">({badge})</span>}
       </div>
@@ -219,37 +219,3 @@ export function ExternalLink({ href, children }: { href: string; children: React
 }
 
 /** Orion-style long-form help under a tool: headings + paragraphs + numbered steps. */
-/** Help column: beside the tool on wide screens (Orion layout), below it on mobile. */
-export function Explainer({ children }: { children: ReactNode }) {
-  return (
-    <article className="prose-cc mt-14 border-t border-white/[.06] pt-4 xl:mt-0 xl:border-0 xl:pt-0 [&>h2:first-child]:!mt-0">
-      {children}
-    </article>
-  );
-}
-
-/** Orion layout: title, then tool on the left and explanations on the right (stacked on mobile). */
-export function ToolLayout({ title, tool, aside, toolWidth = 680 }: { title: ReactNode; tool: ReactNode; aside: ReactNode; toolWidth?: number }) {
-  return (
-    <>
-      {title}
-      <div className="grid items-start gap-x-12 xl:grid-cols-[var(--tool-w)_minmax(0,1fr)]" style={{ "--tool-w": `minmax(0,${toolWidth}px)` } as React.CSSProperties}>
-        <div className="grid min-w-0 gap-0 [&>*]:!mx-0">{tool}</div>
-        {aside}
-      </div>
-    </>
-  );
-}
-
-export function Steps({ items }: { items: ReactNode[] }) {
-  return (
-    <ol className="my-4 grid gap-2.5">
-      {items.map((it, i) => (
-        <li key={i} className="flex gap-3 text-[15px] leading-relaxed text-muted">
-          <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-brand font-display text-[11px] font-extrabold text-white shadow-[0_6px_14px_-6px_rgba(245,75,0,.8)]">{i + 1}</span>
-          <span className="pt-px">{it}</span>
-        </li>
-      ))}
-    </ol>
-  );
-}

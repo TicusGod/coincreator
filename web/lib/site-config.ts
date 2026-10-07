@@ -14,6 +14,7 @@ export const site = raw as {
   logo: string | null;
   email: string | null;
   telegram: string | null;
+  banner: string | null;
 };
 
 const EXPLORERS: Record<Chain, (addr: string) => string> = {

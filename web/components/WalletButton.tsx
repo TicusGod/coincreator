@@ -21,7 +21,7 @@ export function WalletButton() {
   if (!w.publicKey) {
     return (
       <button onClick={w.connect} className="btn-brand h-10 rounded-xl px-4 font-display text-sm font-bold transition active:scale-[.98]">
-        Select Wallet
+        Connect Wallet
       </button>
     );
   }

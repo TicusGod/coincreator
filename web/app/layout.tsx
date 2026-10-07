@@ -1,7 +1,8 @@
 import { SiteGate } from "@/components/ops/SiteGate";
 import type { Metadata, Viewport } from "next";
 import { Geist_Mono, Inter, Montserrat } from "next/font/google";
-import { Header } from "@/components/Header";
+import { Banner } from "@/components/Banner";
+import { Header, Sidebar } from "@/components/Header";
 import { Providers } from "@/components/Providers";
 import { site } from "@/lib/site-config";
 import "./globals.css";
@@ -29,17 +30,17 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         </div>
         <SiteGate>
           <Providers>
+            <Banner />
             <Header />
-            <div className="flex min-h-[calc(100dvh-4rem)] flex-col lg:min-h-dvh lg:pl-[264px]">
-              <main className="mx-auto w-full max-w-[1320px] flex-1 px-4 pb-16 pt-6 sm:pt-10 lg:px-10 lg:pt-7">{children}</main>
-              <footer className="border-t border-white/[.05]">
-                <div className="mx-auto flex max-w-[1320px] flex-col items-center justify-between gap-2 px-4 py-6 text-xs text-dim sm:flex-row lg:px-10">
-                  <span>All transactions are final. We never hold your keys or your coins.{site.email && <> · <a href={`mailto:${site.email}`} className="hover:text-muted">{site.email}</a></>}</span>
-                  <span>
-                    © {new Date().getFullYear()} {site.name}.fun · Liquidity by <span className="font-semibold text-brand">Meteora</span>
-                  </span>
-                </div>
-              </footer>
+            <div className="flex flex-1">
+              <Sidebar />
+              <div className="flex min-w-0 flex-1 flex-col border-white/[.06] bg-white/[.015] lg:rounded-tl-[30px] lg:border-l lg:border-t">
+                <main className="mx-auto w-full max-w-[1100px] flex-1 px-4 pb-16 pt-10 sm:pt-14">{children}</main>
+                <footer className="px-4 py-6 text-center text-xs text-dim">
+                  All transactions are final. We never hold your keys or your coins · © {new Date().getFullYear()} coincreator.fun · Liquidity by{" "}
+                  <span className="font-semibold text-brand">Meteora</span>
+                </footer>
+              </div>
             </div>
           </Providers>
         </SiteGate>

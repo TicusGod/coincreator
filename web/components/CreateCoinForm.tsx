@@ -10,15 +10,9 @@ import { FEES, lamportsToSol } from "@/lib/config";
 import { friendlyError, sendAndConfirm, solscanToken, solscanTx } from "@/lib/client/send";
 import type { CoinInfo } from "@/lib/dexscreener";
 import { Card3D } from "@/components/Card3D";
-import { Button, ExternalLink, Field, Input, Notice, Row, SuccessPanel, Textarea, Toggle, TokenAvatar } from "@/components/ui";
+import { Button, ExternalLink, Field, Input, Notice, SuccessPanel, Textarea, Toggle } from "@/components/ui";
 
 const RENT_ESTIMATE_SOL = 0.02; // mint + metadata + token account (on-chain storage)
-const SUPPLY_PRESETS = [
-  { label: "1M", value: "1000000" },
-  { label: "100M", value: "100000000" },
-  { label: "1B", value: "1000000000" },
-  { label: "10B", value: "10000000000" },
-];
 const ACCEPT = "image/png,image/jpeg,image/gif,image/webp";
 
 interface Form {
@@ -32,10 +26,10 @@ interface Form {
   telegram: string;
 }
 
-const EMPTY: Form = { name: "", symbol: "", decimals: "6", supply: "1000000000", description: "", website: "", twitter: "", telegram: "" };
+const EMPTY: Form = { name: "", symbol: "", decimals: "6", supply: "", description: "", website: "", twitter: "", telegram: "" };
 type Step = "" | "upload" | "sign";
 
-const grouped = (s: string) => (s ? BigInt(s).toLocaleString("en-US") : "0");
+const grouped = (s: string) => (s ? BigInt(s).toLocaleString("en-US") : "");
 
 function ImageDrop({ preview, onFile }: { preview: string | null; onFile: (f: File) => void }) {
   const [over, setOver] = useState(false);
@@ -106,7 +100,7 @@ export function CreateCoinForm({ copy }: { copy?: string }) {
   const [copiedImage, setCopiedImage] = useState<string | null>(null);
   const [copied, setCopied] = useState<CoinInfo | null>(null);
   const [loadingCopy, setLoadingCopy] = useState(!!copy);
-  const [opts, setOpts] = useState({ revokeFreeze: true, revokeMint: true, revokeUpdate: false });
+  const [opts, setOpts] = useState({ revokeFreeze: true, revokeMint: false, revokeUpdate: false });
   const [more, setMore] = useState(false);
   const [step, setStep] = useState<Step>("");
   const [error, setError] = useState("");
@@ -196,7 +190,7 @@ export function CreateCoinForm({ copy }: { copy?: string }) {
   if (done) {
     return (
       <SuccessPanel title={`${form.name} is live`} address={done.mint}>
-        <Link href={`/create-liquidity?mint=${done.mint}`} className="sm:col-span-2">
+        <Link href={`/liquidity?mint=${done.mint}`} className="sm:col-span-2">
           <Button size="lg" className="w-full">Create Liquidity on Meteora</Button>
         </Link>
         <Link href="/my-coins" className="sm:col-span-2">
@@ -209,123 +203,95 @@ export function CreateCoinForm({ copy }: { copy?: string }) {
   }
 
   const busy = !!step;
-  const total = fee + RENT_ESTIMATE_SOL * 1e9;
 
   return (
-    <form onSubmit={submit} className="rise mx-auto grid w-full max-w-[680px] grid-cols-[minmax(0,1fr)] gap-4">
+    <form onSubmit={submit} className="rise mx-auto grid w-full max-w-[580px] grid-cols-[minmax(0,1fr)] gap-4">
       {copied && (
         <Notice tone="success">
           Copying <b>{copied.name}</b> · ${copied.symbol}. Every field stays editable.
         </Notice>
       )}
 
-      <Card3D className="p-5 sm:p-8">
-        {/* live preview */}
-        <div className="mb-6 flex items-center gap-3 rounded-2xl border border-white/[.05] bg-white/[.025] p-3">
-          <TokenAvatar src={preview} label={form.symbol || form.name} size={44} />
-          <div className="min-w-0 flex-1">
-            <div className="truncate font-display text-[15px] font-bold">{form.name || "Your coin"}</div>
-            <div className="truncate text-xs text-muted">${form.symbol || "TICKER"} · {grouped(form.supply)} supply</div>
-          </div>
-          <span className="hidden rounded-lg bg-white/[.04] px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-dim sm:block">SPL · Metaplex</span>
-        </div>
-
-        <div className="grid gap-x-4 gap-y-5 sm:grid-cols-2">
-          <Field label="Name" right={<span className="text-[11px] font-medium text-dim">{form.name.length}/{MAX_NAME}</span>}>
+      <Card3D className="p-5 sm:p-7">
+        <div className="grid gap-x-3 gap-y-4 sm:grid-cols-2">
+          <Field center label="Name">
             <Input value={form.name} onChange={set("name")} maxLength={MAX_NAME} placeholder="Cosmic Cat" required />
           </Field>
-          <Field label="Symbol" right={<span className="text-[11px] font-medium text-dim">{form.symbol.length}/{MAX_SYMBOL}</span>}>
+          <Field center label="Symbol">
             <Input value={form.symbol} onChange={set("symbol")} maxLength={MAX_SYMBOL} placeholder="CCAT" required />
           </Field>
 
-          <div className="grid content-start gap-5">
-            <Field label="Decimals">
+          <div className="grid content-start gap-4">
+            <Field center label="Decimals">
               <Input value={form.decimals} onChange={set("decimals")} inputMode="numeric" maxLength={1} />
             </Field>
-            <Field label="Supply">
-              <Input value={grouped(form.supply)} onChange={(e) => setForm((f) => ({ ...f, supply: e.target.value.replace(/\D/g, "").slice(0, 15) }))} inputMode="numeric" />
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {SUPPLY_PRESETS.map((p) => (
-                  <button
-                    type="button"
-                    key={p.value}
-                    onClick={() => setForm((f) => ({ ...f, supply: p.value }))}
-                    className={`rounded-lg px-2.5 py-1 text-[11px] font-bold transition ${form.supply === p.value ? "bg-brand text-white" : "field text-dim hover:text-muted"}`}
-                  >
-                    {p.label}
-                  </button>
-                ))}
-              </div>
+            <Field center label="Supply">
+              <Input value={grouped(form.supply)} onChange={(e) => setForm((f) => ({ ...f, supply: e.target.value.replace(/\D/g, "").slice(0, 15) }))} inputMode="numeric" placeholder="1,000,000,000" required />
             </Field>
           </div>
           <div className="flex flex-col">
-            <span className="mb-2 font-display text-[13px] font-bold">Image</span>
-            <div className="flex-1">{loadingCopy ? <div className="skeleton h-full min-h-[148px] rounded-2xl" /> : <ImageDrop preview={preview} onFile={pickFile} />}</div>
+            <span className="mb-2 text-center font-display text-[13px] font-bold">Image</span>
+            <div className="flex-1">{loadingCopy ? <div className="skeleton h-full min-h-[132px] rounded-2xl" /> : <ImageDrop preview={preview} onFile={pickFile} />}</div>
           </div>
 
           <div className="sm:col-span-2">
-            <Field label="Description">
-              <Textarea value={form.description} onChange={set("description")} maxLength={1000} placeholder="What is your coin about?" />
+            <Field center label="Description">
+              <Textarea value={form.description} onChange={set("description")} maxLength={1000} placeholder="Tell people what your coin is about" className="!min-h-[84px]" />
             </Field>
           </div>
         </div>
 
         <div className="mt-7 grid gap-6 sm:grid-cols-2">
           <Toggle
+            center
             checked={opts.revokeFreeze}
             onChange={(v) => setOpts((o) => ({ ...o, revokeFreeze: v }))}
-            title="Revoke Freeze"
-            badge="required for pools"
+            title="Revoke Freeze (required)"
             price={`${lamportsToSol(FEES.revokeFreeze)} SOL`}
-            text="Revoke Freeze lets you create a Meteora liquidity pool. No one can ever freeze holders."
+            text="Revoke Freeze allows you to create a liquidity pool"
           />
           <Toggle
+            center
             checked={opts.revokeMint}
             onChange={(v) => setOpts((o) => ({ ...o, revokeMint: v }))}
             title="Revoke Mint"
             price={`${lamportsToSol(FEES.revokeMint)} SOL`}
-            text="Locks the supply forever. Keep it off if you plan to mint more later."
+            text="Mint Authority allows you to increase tokens supply"
           />
         </div>
 
-        <button type="button" onClick={() => setMore((m) => !m)} className="mt-7 flex items-center gap-1.5 font-display text-[15px] font-semibold text-text/90 hover:text-text">
-          {more ? "Hide options" : "Show more options"}
-          <svg className={`transition ${more ? "rotate-180" : ""}`} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M12 5v14m-6-6 6 6 6-6" /></svg>
+        <button type="button" onClick={() => setMore((m) => !m)} className="mt-6 flex items-center gap-1.5 font-display text-[14px] font-semibold text-text/90 hover:text-text">
+          {more ? "Hide Options" : "Show More Options"}
+          <svg className={`transition ${more ? "rotate-180" : ""}`} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="m6 9 6 6 6-6" /></svg>
         </button>
         {more && (
           <div className="rise mt-5 grid gap-5">
-            <div className="grid gap-4 sm:grid-cols-3">
-              <Field label="Website"><Input value={form.website} onChange={set("website")} placeholder="https://" /></Field>
-              <Field label="X"><Input value={form.twitter} onChange={set("twitter")} placeholder="https://x.com/…" /></Field>
-              <Field label="Telegram"><Input value={form.telegram} onChange={set("telegram")} placeholder="https://t.me/…" /></Field>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <Field center label="Website"><Input value={form.website} onChange={set("website")} placeholder="https://" /></Field>
+              <Field center label="X"><Input value={form.twitter} onChange={set("twitter")} placeholder="https://x.com/…" /></Field>
+              <Field center label="Telegram"><Input value={form.telegram} onChange={set("telegram")} placeholder="https://t.me/…" /></Field>
             </div>
-            <div className="sm:w-1/2">
+            <div className="mx-auto sm:w-1/2">
               <Toggle
+                center
                 checked={opts.revokeUpdate}
                 onChange={(v) => setOpts((o) => ({ ...o, revokeUpdate: v }))}
                 title="Revoke Update"
                 price={`${lamportsToSol(FEES.revokeUpdate)} SOL`}
-                text="Name, symbol and image can never be changed. Maximum trust."
+                text="Name, symbol and image can never be changed"
               />
             </div>
           </div>
         )}
 
-        <div className="mt-7 rounded-2xl border border-white/[.05] bg-black/20 px-4 py-3">
-          <Row label="Service">{lamportsToSol(FEES.createCoin)} SOL</Row>
-          {opts.revokeFreeze && <Row label="Revoke freeze">{lamportsToSol(FEES.revokeFreeze)} SOL</Row>}
-          {opts.revokeMint && <Row label="Revoke mint">{lamportsToSol(FEES.revokeMint)} SOL</Row>}
-          {opts.revokeUpdate && <Row label="Revoke update">{lamportsToSol(FEES.revokeUpdate)} SOL</Row>}
-          <Row label="Network rent">≈{RENT_ESTIMATE_SOL} SOL</Row>
-        </div>
-
-        <Button type="submit" size="lg" loading={busy} className="mt-5 w-full">
-          {!wallet.publicKey ? "Select Wallet" : step === "upload" ? "Uploading…" : step === "sign" ? "Confirm in wallet…" : copied ? "Copy Coin" : "Create Coin"}
+        <Button type="submit" size="lg" loading={busy} className="mt-6 w-full !text-[17px]">
+          {!wallet.publicKey ? "Connect Wallet" : step === "upload" ? "Uploading…" : step === "sign" ? "Confirm in wallet…" : copied ? "Copy Coin" : "Create Coin"}
         </Button>
         {busy && <Progress step={step} />}
-        <p className="mt-4 text-center font-display text-sm font-semibold">
-          Total cost: <span className="text-brand">{lamportsToSol(total)} SOL</span>
+        <p className="mt-4 text-center text-[13px] font-medium text-muted">
+          Total cost: <span className="font-display font-bold text-text">{lamportsToSol(fee).toFixed(2)} SOL</span>
         </p>
+        <p className="mt-1 text-center text-[11px] text-dim">+ ≈{RENT_ESTIMATE_SOL} SOL Solana network rent</p>
       </Card3D>
 
       {error && <Notice tone="error">{error}</Notice>}

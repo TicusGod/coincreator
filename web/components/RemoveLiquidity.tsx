@@ -101,7 +101,7 @@ export function RemoveLiquidity() {
   }
 
   return (
-    <div className="rise mx-auto grid max-w-3xl gap-4">
+    <div className="rise mx-auto grid w-full max-w-[640px] gap-4">
       {error && <Notice tone="error">{error}</Notice>}
       {lastSig && (
         <Notice tone="success">

@@ -1,14 +1,11 @@
 import { CopyTrending } from "@/components/CopyTrending";
-import { CopyTrendingExplainer } from "@/components/Explainers";
-import { PageTitle, ToolLayout } from "@/components/ui";
+import { PageTitle } from "@/components/ui";
 
 export default function CopyTrendingPage() {
   return (
-    <ToolLayout
-      toolWidth={780}
-      title={<PageTitle title="Copy Trending Coins" accent="in 1 Click" subtitle="Pick a coin that's running, clone its name, ticker, image and socials, launch your own." />}
-      tool={<CopyTrending />}
-      aside={<CopyTrendingExplainer />}
-    />
+    <>
+      <PageTitle title="Copy Trending Coins" accent="in 1 Click" subtitle="Pick a coin that's running on Solana, clone its name, ticker, image and socials, and launch your own." />
+      <CopyTrending />
+    </>
   );
 }

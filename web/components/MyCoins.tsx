@@ -66,7 +66,7 @@ function PositionRow({ p, onClaim, busy }: { p: UserPosition; onClaim: () => voi
         {p.locked ? (
           <span className="flex items-center gap-1 font-bold uppercase tracking-wide text-sun"><Lock size={12} /> Locked forever</span>
         ) : (
-          <Link href="/remove-liquidity" className="font-semibold text-muted hover:text-text">Remove liquidity →</Link>
+          <Link href="/liquidity?tab=remove" className="font-semibold text-muted hover:text-text">Remove liquidity →</Link>
         )}
       </div>
       <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
@@ -140,7 +140,7 @@ function CoinCard({ c, market, onClaim, claiming }: { c: MyCoin; market?: Market
             <div className="text-xs text-muted">Add liquidity on Meteora so people can buy it. Market data appears a few minutes after.</div>
           </div>
           {!c.positions.length && (
-            <Link href={`/create-liquidity?mint=${ca}`}><Button><Droplets size={15} /> Create Liquidity</Button></Link>
+            <Link href={`/liquidity?mint=${ca}`}><Button><Droplets size={15} /> Create Liquidity</Button></Link>
           )}
         </div>
       )}
@@ -167,12 +167,12 @@ function CoinCard({ c, market, onClaim, claiming }: { c: MyCoin; market?: Market
           <ExternalLink size={14} /> Solscan
         </a>
         {c.positions.length > 0 && (
-          <Link href={`/create-liquidity?mint=${ca}`} className="field inline-flex h-9 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold text-muted hover:text-text">
+          <Link href={`/liquidity?mint=${ca}`} className="field inline-flex h-9 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold text-muted hover:text-text">
             <Droplets size={14} /> New pool
           </Link>
         )}
         {!c.mintRevoked && (
-          <Link href="/#manage" className="field inline-flex h-9 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold text-sun hover:text-text">
+          <Link href="/my-coins#manage" className="field inline-flex h-9 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold text-sun hover:text-text">
             <ShieldAlert size={14} /> Revoke mint
           </Link>
         )}
