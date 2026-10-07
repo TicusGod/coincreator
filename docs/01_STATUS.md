@@ -13,7 +13,7 @@ Updated: 2026-10-06
 
 ## Left
 - Name = CoinCreator, domain coincreator.fun (owner 2026-10-06). Logo = Higgsfield cat+lightning mark (brand/).
-- Create Coin = 0.3 SOL base, 0.5 SOL with revoke freeze + revoke mint (0.1 each) (owner 2026-10-06); options + liquidity fees still placeholders (env `NEXT_PUBLIC_FEE_*`).
+- Fees = coincreate.cc schedule (owner 2026-10-07, read from their live bundle): create 0.1 + 0.1 per option (freeze/mint/update/creator; form default all 3 revokes = 0.4), Copy Trending 0.5 flat (all revoked), pool 0.1, remove 0.1, mint more 0.1. Their boost (0.25) and fee-exempt wallets NOT copied.
 - Vercel project + env, then one real mainnet run with a tiny amount.
 - Not visually checked in a browser yet (no local server rule) — check on the first Vercel preview.
 
