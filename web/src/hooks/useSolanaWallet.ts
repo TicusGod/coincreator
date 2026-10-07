@@ -5,6 +5,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { env } from '../config/env';
 import { useVisibilityAwareInterval } from './useVisibilityAwareInterval';
+import { PrivyWalletName, privyAdapter } from '../providers/PrivyWalletAdapter';
 
 export function useSolanaWallet() {
   const { connection } = useConnection();
@@ -52,9 +53,10 @@ export function useSolanaWallet() {
     connected: wallet.connected,
     connecting: wallet.connecting,
     network: env.network,
-    // Privy wallet is pre-selected: connect() opens Privy's login (email or Phantom/Solflare…).
+    // Opens Privy's login (email or Phantom/Solflare…) — only from a click. Works again after the modal is closed.
     connect: () => {
-      void wallet.connect().catch(() => setVisible(false));
+      if (wallet.wallet?.adapter.name !== PrivyWalletName) wallet.select(PrivyWalletName);
+      void privyAdapter.connect().catch(() => setVisible(false));
     },
     disconnect: () => wallet.disconnect(),
     signTransaction: wallet.signTransaction,

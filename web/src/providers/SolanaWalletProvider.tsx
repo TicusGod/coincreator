@@ -3,7 +3,7 @@ import { WalletModalProvider, useWalletModal } from '@solana/wallet-adapter-reac
 import { Suspense, lazy, useEffect, useMemo } from 'react';
 import { env } from '../config/env';
 import { API_PROXY_HEADER_NAME, API_PROXY_HEADER_VALUE } from '../services/apiProxy';
-import { PrivyWalletAdapter, PrivyWalletName } from './PrivyWalletAdapter';
+import { PrivyWalletName, privyAdapter } from './PrivyWalletAdapter';
 
 import '@solana/wallet-adapter-react-ui/styles.css';
 
@@ -23,19 +23,25 @@ function WalletModalCloseWhenConnected() {
   return null;
 }
 
-/** Keeps the Privy wallet selected so useWallet().connect() opens Privy's login. */
-function SelectPrivy() {
-  const { wallet, select } = useWallet();
+// Pre-select Privy as if restored from storage: wallet-adapter treats a restored selection as "not chosen by the
+// user", so it never calls connect() (no automatic modal). Connecting only happens from the Connect button.
+try {
+  window.localStorage.setItem('walletName', JSON.stringify(PrivyWalletName));
+} catch {
+  /* private mode: the Connect button selects it instead */
+}
+
+/** Silent session restore: if Privy already has a session, show the wallet as connected. Never opens a modal. */
+function RestorePrivySession() {
   useEffect(() => {
-    if (wallet?.adapter.name !== PrivyWalletName) select(PrivyWalletName);
-  }, [wallet, select]);
+    void privyAdapter.autoConnect().catch(() => {});
+  }, []);
   return null;
 }
 
 export default function SolanaWalletProvider({ children }: { children: React.ReactNode }) {
   const endpoint = env.getRpcUrl();
-  const privyAdapter = useMemo(() => new PrivyWalletAdapter(), []);
-  const wallets = useMemo(() => [privyAdapter], [privyAdapter]);
+  const wallets = useMemo(() => [privyAdapter], []);
 
 
 
@@ -49,10 +55,10 @@ export default function SolanaWalletProvider({ children }: { children: React.Rea
         },
       }}
     >
-      <WalletProvider wallets={wallets} autoConnect>
+      <WalletProvider wallets={wallets} autoConnect={false}>
         <WalletModalProvider>
           <WalletModalCloseWhenConnected />
-          <SelectPrivy />
+          <RestorePrivySession />
           {PRIVY_APP_ID && (
             <Suspense fallback={null}>
               <PrivyLayer appId={PRIVY_APP_ID} adapter={privyAdapter} />

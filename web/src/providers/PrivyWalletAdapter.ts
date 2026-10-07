@@ -81,17 +81,24 @@ export class PrivyWalletAdapter extends BaseSignerWalletAdapter {
     this.emit('connect', this._publicKey);
   }
 
-  /** Page load: reconnect silently only when Privy already has a session (never opens the modal). */
+  /** Silent session restore on page load: attaches only if Privy already has a session. Never opens the modal. */
   async autoConnect(): Promise<void> {
     const s = await this.readyState_();
     if (s.authenticated && s.address) this.attach(s.address);
     else throw new WalletConnectionError('No Privy session');
   }
 
+  private _pending: Promise<void> | null = null;
+
+  /** Only ever called from the Connect button. A click while a login is pending re-opens the modal. */
   async connect(): Promise<void> {
-    if (this._publicKey || this._connecting) return;
+    if (this._publicKey) return;
+    if (this._pending) {
+      this._state?.login();
+      return this._pending;
+    }
     this._connecting = true;
-    try {
+    this._pending = (async () => {
       let s = await this.readyState_();
       if (!(s.authenticated && s.address)) {
         const cancelsBefore = s.cancelCount;
@@ -104,11 +111,11 @@ export class PrivyWalletAdapter extends BaseSignerWalletAdapter {
         }
       }
       this.attach(s.address!);
-    } catch (e) {
-      const err = e instanceof WalletConnectionError ? e : new WalletConnectionError((e as Error)?.message, e);
-      this.emit('error', err);
-      throw err;
+    })();
+    try {
+      await this._pending;
     } finally {
+      this._pending = null;
       this._connecting = false;
     }
   }
@@ -142,3 +149,6 @@ export class PrivyWalletAdapter extends BaseSignerWalletAdapter {
     return out;
   }
 }
+
+/** The single Privy wallet instance shared by the provider and the Connect button. */
+export const privyAdapter = new PrivyWalletAdapter();
