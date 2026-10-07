@@ -8,16 +8,16 @@ import type { CoinInfo } from "@/lib/dexscreener";
 import { useAppWallet } from "@/lib/client/wallet";
 import { launchCoin } from "@/lib/client/launch";
 import { friendlyError } from "@/lib/client/send";
-import { coinFee } from "@/lib/chain/token";
 import { MAX_NAME, MAX_SYMBOL } from "@/lib/chain/metaplex";
-import { lamportsToSol } from "@/lib/config";
+import { FEES, lamportsToSol } from "@/lib/config";
 import { LaunchSuccessModal } from "@/components/LaunchSuccessModal";
 import { toast } from "@/components/Toaster";
 import { TelegramLogo, XLogo } from "@/components/icons";
 
-/** What a 1-click copy mints: same name, ticker, picture and socials; 1B supply, 6 decimals, freeze + mint revoked. */
-const COPY_OPTIONS = { revokeFreeze: true, revokeMint: true, revokeUpdate: false };
-const COPY_FEE = lamportsToSol(coinFee(COPY_OPTIONS));
+/** What a 1-click copy mints (as coincreate.cc): same name, ticker, picture and socials; 1B supply, 6 decimals,
+ *  freeze + mint + update all revoked, for one flat fee. */
+const COPY_OPTIONS = { revokeFreeze: true, revokeMint: true, revokeUpdate: true };
+const COPY_FEE = lamportsToSol(FEES.copyTrending);
 
 function formatMarketCap(n: number | null): string {
   if (n === null) return "—";
@@ -167,6 +167,7 @@ export function CopyTrending() {
         imageUrl: c.imageUrl,
         links: { website: c.website ?? undefined, twitter: c.twitter ?? undefined, telegram: c.telegram ?? undefined },
         options: COPY_OPTIONS,
+        flatFee: FEES.copyTrending,
       });
       toast.success("Token created", { id: t });
       setMint(res.mint);
@@ -184,7 +185,7 @@ export function CopyTrending() {
         <div className="mx-auto max-w-6xl">
           <h1 className="mb-8 text-center text-3xl font-bold tracking-tight text-[#fafafa]">Copy Trending Coins in 1 Click</h1>
           <div className="mb-6 flex items-center justify-between gap-4">
-            <p className="text-xs text-[#696e77]">Same name, ticker, image and socials · 1B supply · freeze &amp; mint revoked · {COPY_FEE} SOL</p>
+            <p className="text-xs text-[#696e77]">Same name, ticker, image and socials · 1B supply · freeze, mint &amp; update revoked · {COPY_FEE} SOL</p>
             <button
               onClick={refresh}
               aria-label="Refresh"

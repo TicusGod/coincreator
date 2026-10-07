@@ -28,10 +28,13 @@ describe("service fees", () => {
     }
   });
 
-  it("prices: create 0.3, +0.1 per option, copy = 0.5", () => {
-    expect(coinFee({ revokeFreeze: false, revokeMint: false, revokeUpdate: false })).toBe(0.3e9);
-    expect(coinFee({ revokeFreeze: true, revokeMint: true, revokeUpdate: false })).toBe(0.5e9);
-    expect(coinFee({ revokeFreeze: true, revokeMint: true, revokeUpdate: true, modifyCreator: true })).toBe(0.7e9);
+  it("prices match coincreate.cc: create 0.1, +0.1 per option, copy 0.5 flat, pool 0.1, remove 0.1", () => {
+    expect(coinFee({ revokeFreeze: false, revokeMint: false, revokeUpdate: false })).toBe(0.1e9);
+    expect(coinFee({ revokeFreeze: true, revokeMint: true, revokeUpdate: true })).toBe(0.4e9); // form default
+    expect(coinFee({ revokeFreeze: true, revokeMint: true, revokeUpdate: true, modifyCreator: true })).toBe(0.5e9);
+    expect(FEES.copyTrending).toBe(0.5e9);
+    expect(FEES.createLiquidity).toBe(0.1e9);
+    expect(FEES.removeLiquidity).toBe(0.1e9);
     expect(new PublicKey(OWNER_WALLET).toBase58()).toBe(OWNER_WALLET);
   });
 });

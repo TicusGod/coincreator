@@ -59,7 +59,7 @@ const INITIAL: Form = {
   creatorWebsite: "",
   revokeFreeze: true,
   revokeMint: true,
-  revokeUpdate: false,
+  revokeUpdate: true,
 };
 
 const inputCls = (error?: string) =>

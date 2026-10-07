@@ -28,6 +28,8 @@ export interface CreateCoinParams extends CoinOptions {
   uri: string;
   decimals: number;
   supply: bigint; // whole tokens
+  /** Replaces the per-option sum (Copy Trending is a flat price). */
+  flatFee?: number;
 }
 
 export function coinFee(o: CoinOptions): number {
@@ -60,7 +62,7 @@ export async function buildCreateCoinTx(conn: Connection, p: CreateCoinParams, t
     createMintToInstruction(mint.publicKey, ata, p.owner, raw),
   );
   if (p.revokeMint) tx.add(createSetAuthorityInstruction(mint.publicKey, p.owner, AuthorityType.MintTokens, null));
-  const fee = coinFee(p);
+  const fee = p.flatFee ?? coinFee(p);
   if (treasury && fee > 0) tx.add(SystemProgram.transfer({ fromPubkey: p.owner, toPubkey: treasury, lamports: fee }));
   tx.feePayer = p.owner;
   return { tx, mint };

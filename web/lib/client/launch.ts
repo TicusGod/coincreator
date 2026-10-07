@@ -18,6 +18,8 @@ export interface LaunchInput {
   links?: { website?: string; twitter?: string; telegram?: string; discord?: string };
   creator?: { name?: string; website?: string };
   options: CoinOptions;
+  /** Flat service fee instead of the per-option sum (Copy Trending). */
+  flatFee?: number;
 }
 
 export async function launchCoin(wallet: AppWallet, conn: Connection, input: LaunchInput, onStage?: (s: LaunchStage) => void) {
@@ -47,6 +49,7 @@ export async function launchCoin(wallet: AppWallet, conn: Connection, input: Lau
     decimals: input.decimals,
     supply: input.supply,
     ...input.options,
+    flatFee: input.flatFee,
   });
   const sig = await sendAndConfirm(wallet, conn, tx, [mint], () => onStage?.("confirming"));
   return { mint: mint.publicKey.toBase58(), sig };

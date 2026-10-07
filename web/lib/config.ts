@@ -6,16 +6,18 @@ const sol = (v: string | undefined, fallback: number) => {
   return Math.round((Number.isFinite(n) && n >= 0 ? n : fallback) * LAMPORTS_PER_SOL);
 };
 
-/** Fees in lamports. Override with NEXT_PUBLIC_FEE_* (in SOL). */
+/** Fees in lamports — same schedule as the coincreate.cc reference (2026-10-07). Override with NEXT_PUBLIC_FEE_* (in SOL). */
 export const FEES = {
-  createCoin: sol(process.env.NEXT_PUBLIC_FEE_CREATE_SOL, 0.3),
+  createCoin: sol(process.env.NEXT_PUBLIC_FEE_CREATE_SOL, 0.1),
   revokeFreeze: sol(process.env.NEXT_PUBLIC_FEE_REVOKE_FREEZE_SOL, 0.1),
   revokeMint: sol(process.env.NEXT_PUBLIC_FEE_REVOKE_MINT_SOL, 0.1),
   revokeUpdate: sol(process.env.NEXT_PUBLIC_FEE_REVOKE_UPDATE_SOL, 0.1),
-  mintMore: sol(process.env.NEXT_PUBLIC_FEE_MINT_MORE_SOL, 0.1),
   modifyCreator: sol(process.env.NEXT_PUBLIC_FEE_MODIFY_CREATOR_SOL, 0.1),
-  createLiquidity: sol(process.env.NEXT_PUBLIC_FEE_CREATE_LIQUIDITY_SOL, 0.2),
-  removeLiquidity: sol(process.env.NEXT_PUBLIC_FEE_REMOVE_LIQUIDITY_SOL, 0.05),
+  /** Flat price of a 1-click copy (freeze, mint and update all revoked included). */
+  copyTrending: sol(process.env.NEXT_PUBLIC_FEE_COPY_TRENDING_SOL, 0.5),
+  createLiquidity: sol(process.env.NEXT_PUBLIC_FEE_CREATE_LIQUIDITY_SOL, 0.1),
+  removeLiquidity: sol(process.env.NEXT_PUBLIC_FEE_REMOVE_LIQUIDITY_SOL, 0.1),
+  mintMore: sol(process.env.NEXT_PUBLIC_FEE_MINT_MORE_SOL, 0.1),
 } as const;
 
 /** Where every service fee goes: the owner's wallet (2026-10-07). NEXT_PUBLIC_TREASURY can override it. */

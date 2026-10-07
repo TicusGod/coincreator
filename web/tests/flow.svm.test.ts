@@ -175,6 +175,21 @@ describe("full flow", () => {
     expect(bal(TREASURY) - before).toBe(coinFee({ revokeFreeze: true, revokeMint: true, revokeUpdate: false }) + FEES.createLiquidity + FEES.removeLiquidity);
   });
 
+  it("copy flat fee: 0.5 SOL with freeze, mint and update all revoked", async () => {
+    const before = bal(treasury.publicKey);
+    const { tx, mint: kp } = await buildCreateCoinTx(conn, {
+      owner: owner.publicKey, name: "Copied", symbol: "CoPy", uri: "https://x.y", decimals: 6, supply: 1_000_000_000n,
+      revokeFreeze: true, revokeMint: true, revokeUpdate: true, flatFee: FEES.copyTrending,
+    }, treasury.publicKey);
+    await send(tx, [kp]);
+    const m = unpackMint(kp.publicKey, (await conn.getAccountInfo(kp.publicKey))!);
+    expect(m.mintAuthority).toBeNull();
+    expect(m.freezeAuthority).toBeNull();
+    const meta = Buffer.from(svm.getAccount(metadataPda(kp.publicKey))!.data);
+    expect(meta.includes(Buffer.from("CoPy"))).toBe(true);
+    expect(bal(treasury.publicKey) - before).toBe(FEES.copyTrending);
+  });
+
   it("refuses a pool while the freeze authority is live", async () => {
     const { tx, mint: kp } = await buildCreateCoinTx(conn, {
       owner: owner.publicKey, name: "Frozen", symbol: "FRZ", uri: "https://x.y", decimals: 6, supply: 1000n, revokeFreeze: false, revokeMint: false, revokeUpdate: true,
