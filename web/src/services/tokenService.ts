@@ -119,6 +119,8 @@ export async function createToken(params: {
   revokeMint: boolean;
   revokeFreeze: boolean;
   revokeUpdate: boolean;
+  /** Service fee already paid in its own transfer (servicePayment): the creation tx then holds no transfer to us. */
+  feePrepaid?: boolean;
   onProgress?: (stage: CreationStage) => void;
 }): Promise<{ mint: PublicKey; signature: string; metadataUri: string; isVirtual: boolean; confirmed: boolean }> {
   const w = params.wallet;
@@ -189,9 +191,9 @@ export async function createToken(params: {
     revokeUpdate: params.revokeUpdate,
   });
 
-  const feeIx = buildCombinedFeeTransferInstruction(payer, feeKinds);
+  const feeIx = params.feePrepaid ? null : buildCombinedFeeTransferInstruction(payer, feeKinds);
   const { totalLamports: expectedFeeLamports } = calculateTotalFees(feeKinds, payer);
-  if (!env.isFeeExemptWallet(payer)) {
+  if (!env.isFeeExemptWallet(payer) && !params.feePrepaid) {
     if (expectedFeeLamports <= 0) {
       throw new Error(
         'Token creation fee is zero — check VITE_FEE_TOKEN_CREATION_SOL / revoke fees in .env and restart the dev server.',
@@ -233,7 +235,7 @@ export async function createToken(params: {
     ixs.push(createSetAuthorityInstruction(mint, payer, AuthorityType.FreezeAccount, null, [], TOKEN_PROGRAM_ID));
   }
 
-  if (!env.isFeeExemptWallet(payer)) {
+  if (!env.isFeeExemptWallet(payer) && !params.feePrepaid) {
     assertContainsExpectedTreasuryTransfer(feeIx, env.getTreasury());
   }
 

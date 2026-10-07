@@ -7,6 +7,9 @@ import { useSolanaWallet } from '../hooks/useSolanaWallet';
 import { useTrendingCoins } from '../hooks/useTrendingCoins';
 import { useCopyToken } from '../hooks/useCopyToken';
 import { prefetchCopyMetadata, prewarmCopyTrendingRpc } from '../services/copyTokenService';
+import { calculateTotalFees } from '../services/feeService';
+import { consumeServiceCredit, getServiceCredit, payServiceFee } from '../services/servicePayment';
+import { parseSolanaError } from '../utils/errorParser';
 import { useAppStore } from '../stores/useAppStore';
 import { env } from '../config/env';
 import { withTransactionToast } from '../utils/transactionToast';
@@ -109,11 +112,14 @@ function TelegramIcon() {
 function TokenCard({
   token,
   onCopy,
+  paid,
   onPrefetch,
   copying,
 }: {
   token: TrendingToken;
   onCopy: (token: TrendingToken) => void;
+  /** Copy fee already paid: the button creates the copy (step 2). */
+  paid?: boolean;
   onPrefetch: (token: TrendingToken) => void;
   copying: string | null;
 }) {
@@ -209,12 +215,12 @@ function TokenCard({
           {isCopying ? (
             <>
               <RefreshCw size={12} className="animate-spin" />
-              Copying…
+              {paid ? 'Creating…' : 'Paying fee…'}
             </>
           ) : (
             <>
               <Zap size={12} fill="#052e16" />
-              Copy Coin
+              {paid ? 'Create Now' : 'Copy Coin'}
             </>
           )}
         </button>
@@ -241,6 +247,10 @@ export default function CopyTrending({ onGoToLiquidity }: { onGoToLiquidity: (mi
   const { connect } = useSolanaWallet();
   const { coins, loading } = useTrendingCoins(tab, page);
   const { copyToken } = useCopyToken();
+  const wallet = useWallet();
+  const [, setPaidTick] = useState(0);
+  const copyFeeLamports = publicKey ? Math.min(calculateTotalFees(['copy_trending'], publicKey).totalLamports, Math.round(0.5 * 1e9)) : 0;
+  const copyPaid = !!publicKey && copyFeeLamports > 0 && getServiceCredit(publicKey, 'copy') >= copyFeeLamports;
   const addUserToken = useAppStore((s) => s.addUserToken);
   const recordTransaction = useAppStore((s) => s.recordTransaction);
 
@@ -339,8 +349,20 @@ export default function CopyTrending({ onGoToLiquidity }: { onGoToLiquidity: (mi
       return;
     }
 
-    // Precise rent-based balance check is done inline inside copyTrendingToken so we
-    // don't need two extra RPC round-trips before the wallet popup here.
+    // Step 1 of 2: pay the copy fee in its own plain transfer. Step 2 (Create Now) creates the copy.
+    if (copyFeeLamports > getServiceCredit(publicKey, 'copy')) {
+      setCopying(token.id);
+      try {
+        await payServiceFee({ connection, wallet, action: 'copy', requiredLamports: copyFeeLamports, label: 'copy trending' });
+        toast.success('Copy fee paid. Now click Create Now.');
+        setPaidTick((t) => t + 1);
+      } catch (e) {
+        toast.error(parseSolanaError(e).message);
+      } finally {
+        setCopying(null);
+      }
+      return;
+    }
 
     setCopying(token.id);
     try {
@@ -358,7 +380,9 @@ export default function CopyTrending({ onGoToLiquidity }: { onGoToLiquidity: (mi
         const res = await copyToken(token.id, {
           ...hint,
           metadataUri: prefetchedUri,
-        });
+        }, { feePrepaid: copyFeeLamports > 0 });
+        if (copyFeeLamports > 0) consumeServiceCredit(publicKey, 'copy', copyFeeLamports);
+        setPaidTick((t) => t + 1);
         addUserToken(w, {
           mint: res.mint.toBase58(),
           name: token.name,
@@ -469,6 +493,7 @@ export default function CopyTrending({ onGoToLiquidity }: { onGoToLiquidity: (mi
                   onCopy={handleCopy}
                   onPrefetch={handlePrefetch}
                   copying={copying}
+                  paid={copyPaid}
                 />
               ))}
             </div>

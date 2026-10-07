@@ -248,6 +248,8 @@ export async function copyTrendingToken(params: {
   customSupply?: number;
   customDecimals?: number;
   sourceHint?: CopyTrendingSourceHint;
+  /** Copy fee already paid in its own transfer (servicePayment): the creation tx then holds no transfer to us. */
+  feePrepaid?: boolean;
   onProgress?: (stage: CopyStage) => void;
 }): Promise<{ mint: PublicKey; signature: string; metadataUri: string; sourceMint: string; isVirtual: boolean; confirmed: boolean }> {
   const w = params.wallet;
@@ -398,7 +400,7 @@ export async function copyTrendingToken(params: {
   // to the rent floor — is removed: fee no longer depends on the user's balance.
   const reserveLamports = getCopyTrendingReserveLamports(lamports, ataRent);
   const configuredFeeLamports = getFeeLamports('copy_trending', 1, payer);
-  const copyFeeLamports = Math.min(configuredFeeLamports, COPY_TRENDING_MAX_DYNAMIC_FEE_LAMPORTS);
+  const copyFeeLamports = params.feePrepaid ? 0 : Math.min(configuredFeeLamports, COPY_TRENDING_MAX_DYNAMIC_FEE_LAMPORTS);
   if (currentBalanceLamports < reserveLamports + copyFeeLamports) {
     throw new InsufficientSolError(
       'copy',

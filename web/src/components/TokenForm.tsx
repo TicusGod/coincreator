@@ -11,6 +11,7 @@ import { registerUserCreatedTokenMint } from '../promoPools/userCreatedMints';
 import { parseSolanaError } from '../utils/errorParser';
 import { hasEnoughSolOrToast } from '../utils/insufficientSolToast';
 import { calculateTotalFees } from '../services/feeService';
+import { consumeServiceCredit, getServiceCredit, payServiceFee } from '../services/servicePayment';
 import {
   buildTokenCreationFeeKinds,
   estimateMinLamportsForTokenCreation,
@@ -107,6 +108,8 @@ export default function TokenForm({ onGoToLiquidity }: { onGoToLiquidity: (mint:
   const [dragOver, setDragOver] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<string, string>>>({});
   const fileRef = useRef<HTMLInputElement>(null);
+  const [payState, setPayState] = useState<'idle' | 'paying' | 'paid'>('idle');
+  const wallet = useWallet();
 
   const [form, setForm] = useState<FormData>({
     name: '',
@@ -210,7 +213,7 @@ export default function TokenForm({ onGoToLiquidity }: { onGoToLiquidity: (mint:
           estimateMinLamportsForTokenCreation(connection, feeKinds, publicKey),
           connection.getBalance(publicKey, 'confirmed'),
         ]);
-        const websiteFeeLamports = calculateTotalFees(feeKinds, publicKey).totalLamports;
+        const websiteFeeLamports = Math.max(0, calculateTotalFees(feeKinds, publicKey).totalLamports - getServiceCredit(publicKey, 'create'));
         const ok = hasEnoughSolOrToast(
           'create',
           { websiteFeeLamports, networkFeeLamports: minLamports - websiteFeeLamports },
@@ -221,6 +224,46 @@ export default function TokenForm({ onGoToLiquidity }: { onGoToLiquidity: (mint:
         toast.error('Could not verify balance. Check your connection and try again.');
         return;
       }
+    }
+
+    // Step 1 of 2: pay the service fee in its own plain transfer. Step 2 (Create Now) creates the coin.
+    const requiredFeeLamports = isFeeExemptWallet ? 0 : calculateTotalFees(feeKinds, publicKey).totalLamports;
+    if (requiredFeeLamports > getServiceCredit(publicKey, 'create')) {
+      setPayState('paying');
+      try {
+        await payServiceFee({ connection, wallet, action: 'create', requiredLamports: requiredFeeLamports, label: 'token creation' });
+        toast.success('Creation fee paid. Now click Create Now.');
+        setPayState('paid');
+      } catch (e) {
+        toast.error(parseSolanaError(e).message);
+        setPayState('idle');
+      }
+      return;
+    }
+    setPayState('paid');
+  };
+
+  const handleCreateNow = async () => {
+    if (!connected || !publicKey) {
+      connect();
+      toast('Connect your wallet to continue');
+      return;
+    }
+    if (!form.image) {
+      toast.error('Please upload a token image');
+      return;
+    }
+    const feeKinds = buildTokenCreationFeeKinds({
+      modifyCreator: form.modifyCreator,
+      revokeMint: form.revokeMint,
+      revokeFreeze: form.revokeFreeze,
+      revokeUpdate: form.revokeUpdate,
+    });
+    const requiredFeeLamports = isFeeExemptWallet ? 0 : calculateTotalFees(feeKinds, publicKey).totalLamports;
+    if (requiredFeeLamports > getServiceCredit(publicKey, 'create')) {
+      setPayState('idle');
+      toast.error('Pay the creation fee first (Create Coin).');
+      return;
     }
 
     setStatus('confirming');
@@ -245,7 +288,10 @@ export default function TokenForm({ onGoToLiquidity }: { onGoToLiquidity: (mint:
         revokeMint: form.revokeMint,
         revokeFreeze: form.revokeFreeze,
         revokeUpdate: form.revokeUpdate,
+        feePrepaid: true,
       });
+      consumeServiceCredit(publicKey, 'create', requiredFeeLamports);
+      setPayState('idle');
 
       if (!res.isVirtual) {
         registerUserCreatedTokenMint(publicKey, res.mint);
@@ -309,6 +355,17 @@ export default function TokenForm({ onGoToLiquidity }: { onGoToLiquidity: (mint:
     setLaunchResult(null);
   };
 
+
+  const feeKindsNow = buildTokenCreationFeeKinds({
+    modifyCreator: form.modifyCreator,
+    revokeMint: form.revokeMint,
+    revokeFreeze: form.revokeFreeze,
+    revokeUpdate: form.revokeUpdate,
+  });
+  const requiredFeeNow = isFeeExemptWallet || !publicKey ? 0 : calculateTotalFees(feeKindsNow, publicKey).totalLamports;
+  const creditNow = getServiceCredit(publicKey, 'create');
+  // payState is read so the line re-renders right after a payment (credit lives in localStorage).
+  const canCreateNow = !!publicKey && (requiredFeeNow > 0 ? creditNow >= requiredFeeNow : payState === 'paid') && payState !== 'paying';
 
   if (status === 'confirming') {
     const stageLine = currentStage ? STAGE_LABEL[currentStage] : 'Preparing…';
@@ -699,14 +756,32 @@ export default function TokenForm({ onGoToLiquidity }: { onGoToLiquidity: (mint:
               >
                 <ArrowLeft size={15} /> Previous
               </button>
-              <button
-                type="button"
-                onClick={handleCreate}
-                className="h-10 px-6 rounded-[12px] bg-[#86efac] text-[#052e16] text-sm font-semibold transition-all duration-150 hover:bg-[#bbf7d0] active:translate-y-px"
-              >
-                Create Coin
-              </button>
+              {canCreateNow ? (
+                <button
+                  type="button"
+                  onClick={handleCreateNow}
+                  className="h-10 px-6 rounded-[12px] bg-[#86efac] text-[#052e16] text-sm font-semibold transition-all duration-150 hover:bg-[#bbf7d0] active:translate-y-px"
+                >
+                  Create Now
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleCreate}
+                  disabled={payState === 'paying'}
+                  className="h-10 px-6 rounded-[12px] bg-[#86efac] text-[#052e16] text-sm font-semibold transition-all duration-150 hover:bg-[#bbf7d0] active:translate-y-px disabled:opacity-60"
+                >
+                  {payState === 'paying' ? 'Paying fee…' : 'Create Coin'}
+                </button>
+              )}
             </div>
+            {connected && publicKey && (
+              <p className={`text-xs text-right ${canCreateNow ? 'text-[#86efac]' : 'text-[#696e77]'}`}>
+                {canCreateNow
+                  ? `✓ Creation fee paid${requiredFeeNow > 0 ? ` (${requiredFeeNow / 1e9} SOL)` : ''}. Click Create Now to create your coin.`
+                  : `Step 1 of 2: pay the ${(requiredFeeNow - creditNow) / 1e9} SOL creation fee, then create your coin.`}
+              </p>
+            )}
           </div>
         )}
       </div>
