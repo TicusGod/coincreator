@@ -49,7 +49,8 @@ export function requireHttpsUrlEnv(name) {
 }
 
 export function getServerRpcUrl(network) {
-  const url = PUBLIC_RPC_URLS[network];
+  // Helius (or any keyed RPC) from SOLANA_RPC_URL_MAINNET when set; public endpoint otherwise.
+  const url = (network === 'mainnet-beta' ? readServerEnv('SOLANA_RPC_URL_MAINNET') : undefined) ?? PUBLIC_RPC_URLS[network];
   if (!url) {
     throw new Error(`Unsupported Solana network: ${network}`);
   }
