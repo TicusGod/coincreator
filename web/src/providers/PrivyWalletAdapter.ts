@@ -1,0 +1,144 @@
+// Privy exposed as a regular Solana wallet-adapter wallet, so every existing useWallet() call keeps working.
+// Login (email → embedded wallet, or Phantom/Solflare/Backpack via Privy) happens in Privy's modal.
+import {
+  BaseSignerWalletAdapter,
+  WalletConnectionError,
+  WalletNotConnectedError,
+  WalletReadyState,
+  WalletSignTransactionError,
+  type WalletName,
+} from '@solana/wallet-adapter-base';
+import { PublicKey, Transaction, VersionedTransaction } from '@solana/web3.js';
+
+export const PrivyWalletName = 'Privy' as WalletName<'Privy'>;
+
+/** What the React bridge (inside PrivyProvider) feeds the adapter. */
+export interface PrivyBridgeState {
+  ready: boolean;
+  authenticated: boolean;
+  address: string | null;
+  login: () => void;
+  logout: () => Promise<void>;
+  signTransaction: (bytes: Uint8Array) => Promise<Uint8Array>;
+  /** Increments each time the user closes the login modal without signing in. */
+  cancelCount: number;
+}
+
+const ICON =
+  'data:image/svg+xml;base64,' +
+  btoa(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="#86efac"/><path d="M17 6 9 18h6l-1 8 8-12h-6z" fill="#052e16"/></svg>',
+  );
+
+const LOGIN_TIMEOUT_MS = 10 * 60 * 1000;
+
+export class PrivyWalletAdapter extends BaseSignerWalletAdapter {
+  name = PrivyWalletName;
+  url = 'https://privy.io';
+  icon = ICON;
+  readonly supportedTransactionVersions = new Set(['legacy', 0] as const);
+
+  private _publicKey: PublicKey | null = null;
+  private _connecting = false;
+  private _state: PrivyBridgeState | null = null;
+  private _waiters: Array<(s: PrivyBridgeState) => void> = [];
+
+  get publicKey() {
+    return this._publicKey;
+  }
+  get connecting() {
+    return this._connecting;
+  }
+  get readyState() {
+    return WalletReadyState.Installed;
+  }
+
+  /** Called by the bridge on every Privy state change. */
+  setState(s: PrivyBridgeState) {
+    this._state = s;
+    for (const w of this._waiters.splice(0)) w(s);
+    if (this._publicKey && (!s.authenticated || !s.address)) {
+      this._publicKey = null;
+      this.emit('disconnect');
+    } else if (this._publicKey && s.address && s.address !== this._publicKey.toBase58()) {
+      this._publicKey = new PublicKey(s.address);
+      this.emit('connect', this._publicKey);
+    }
+  }
+
+  private next(): Promise<PrivyBridgeState> {
+    return new Promise((r) => this._waiters.push(r));
+  }
+
+  private async readyState_(): Promise<PrivyBridgeState> {
+    let s = this._state;
+    while (!s || !s.ready) s = await this.next();
+    return s;
+  }
+
+  private attach(address: string) {
+    this._publicKey = new PublicKey(address);
+    this.emit('connect', this._publicKey);
+  }
+
+  /** Page load: reconnect silently only when Privy already has a session (never opens the modal). */
+  async autoConnect(): Promise<void> {
+    const s = await this.readyState_();
+    if (s.authenticated && s.address) this.attach(s.address);
+    else throw new WalletConnectionError('No Privy session');
+  }
+
+  async connect(): Promise<void> {
+    if (this._publicKey || this._connecting) return;
+    this._connecting = true;
+    try {
+      let s = await this.readyState_();
+      if (!(s.authenticated && s.address)) {
+        const cancelsBefore = s.cancelCount;
+        s.login();
+        const deadline = Date.now() + LOGIN_TIMEOUT_MS;
+        while (!(s.authenticated && s.address)) {
+          if (s.cancelCount !== cancelsBefore) throw new WalletConnectionError('Login cancelled');
+          if (Date.now() > deadline) throw new WalletConnectionError('Login timed out');
+          s = await this.next();
+        }
+      }
+      this.attach(s.address!);
+    } catch (e) {
+      const err = e instanceof WalletConnectionError ? e : new WalletConnectionError((e as Error)?.message, e);
+      this.emit('error', err);
+      throw err;
+    } finally {
+      this._connecting = false;
+    }
+  }
+
+  async disconnect(): Promise<void> {
+    const had = !!this._publicKey;
+    this._publicKey = null;
+    await this._state?.logout().catch(() => {});
+    if (had) this.emit('disconnect');
+  }
+
+  async signTransaction<T extends Transaction | VersionedTransaction>(transaction: T): Promise<T> {
+    const s = this._state;
+    if (!this._publicKey || !s) throw new WalletNotConnectedError();
+    try {
+      if (transaction instanceof VersionedTransaction) {
+        return VersionedTransaction.deserialize(await s.signTransaction(transaction.serialize())) as T;
+      }
+      const bytes = transaction.serialize({ requireAllSignatures: false, verifySignatures: false });
+      return Transaction.from(await s.signTransaction(bytes)) as T;
+    } catch (e) {
+      const err = new WalletSignTransactionError((e as Error)?.message, e);
+      this.emit('error', err);
+      throw err;
+    }
+  }
+
+  async signAllTransactions<T extends Transaction | VersionedTransaction>(transactions: T[]): Promise<T[]> {
+    const out: T[] = [];
+    for (const tx of transactions) out.push(await this.signTransaction(tx));
+    return out;
+  }
+}

@@ -52,7 +52,10 @@ export function useSolanaWallet() {
     connected: wallet.connected,
     connecting: wallet.connecting,
     network: env.network,
-    connect: () => setVisible(true),
+    // Privy wallet is pre-selected: connect() opens Privy's login (email or Phantom/Solflare…).
+    connect: () => {
+      void wallet.connect().catch(() => setVisible(false));
+    },
     disconnect: () => wallet.disconnect(),
     signTransaction: wallet.signTransaction,
     signAllTransactions: wallet.signAllTransactions,
