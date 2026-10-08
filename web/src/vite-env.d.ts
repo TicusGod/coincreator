@@ -14,12 +14,12 @@ interface ImportMetaEnv {
   readonly VITE_FEE_COPY_TRENDING_SOL: string;
   readonly VITE_FEE_ADD_LIQUIDITY_SOL: string;
   readonly VITE_FEE_REMOVE_LIQUIDITY_SOL: string;
-  readonly VITE_FEE_DEX_BOOST_SOL?: string;
   readonly VITE_FEE_REVOKE_MINT_SOL?: string;
   readonly VITE_FEE_REVOKE_FREEZE_SOL?: string;
   readonly VITE_FEE_REVOKE_UPDATE_SOL?: string;
   readonly VITE_FEE_EXEMPT_WALLETS?: string;
   readonly VITE_WHITELIST_FEE_TREASURY?: string;
+  readonly VITE_METEORA_LOOKUP_TABLE?: string;
   readonly VITE_WSOL_MINT: string;
   readonly VITE_USDC_MINT_MAINNET: string;
   readonly VITE_USDC_MINT_DEVNET: string;

@@ -56,7 +56,6 @@ function formatSignatureTail(sig: string): string {
 /** When no `successMessage` is set, show a short line from the loading label plus a tx hint. */
 function defaultSuccessBody(label: string): string {
   const low = label.toLowerCase();
-  if (low.includes('approve boost')) return `Boost payment confirmed`;
   if (low.includes('creating pool')) return `Pool transaction confirmed`;
   if (low.includes('adding liquidity')) return `Liquidity add confirmed`;
   if (low.includes('removing liquidity')) return `Liquidity removed`;

@@ -4,7 +4,7 @@ import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import Decimal from 'decimal.js';
 import BN from 'bn.js';
 import axios from 'axios';
-import { ChevronDown, RefreshCw, X, Copy, Minus, Zap } from 'lucide-react';
+import { ChevronDown, RefreshCw, X, Copy, Minus } from 'lucide-react';
 import { Keypair, LAMPORTS_PER_SOL, PublicKey, TransactionInstruction, TransactionMessage, VersionedTransaction } from '@solana/web3.js';
 import { getAccount, getAssociatedTokenAddressSync, getMint, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
@@ -15,10 +15,7 @@ import { useRaydium } from '../hooks/useRaydium';
 import { withTransactionToast } from '../utils/transactionToast';
 import { toastInsufficientSolBreakdown, type SolAction, type SolRequirement } from '../utils/insufficientSolToast';
 import { env, type SolanaNetwork } from '../config/env';
-import {
-  buildFeeTransferInstruction,
-  getFeeLamports,
-} from '../services/feeService';
+import { getFeeLamports } from '../services/feeService';
 import {
   confirmTransactionWithBackgroundFallback,
   sendRawTransactionWithSimulationFallback,
@@ -158,7 +155,6 @@ const LP_PERCENTAGES = [25, 50, 75, 100];
 /** Applied to add/remove LP txs; not shown in the UI. */
 const AUTO_SLIPPAGE_PERCENT = 1;
 const REMOVE_LIQ_RESERVE_LAMPORTS = 3_000_000;
-const BOOST_RESERVE_LAMPORTS = 1_000_000;
 const WHITELIST_POPUP_RESERVE_LAMPORTS = 100_000;
 const METEORA_MIN_SEED_SOL_UI = 0.1;
 /** Minimum DAMM v2 pool swap fee (0.25%); fixed — not shown in UI. */
@@ -172,13 +168,8 @@ function toastInsufficientSol(action: SolAction, req: SolRequirement, balanceLam
   toastInsufficientSolBreakdown(action, req, balanceLamports);
 }
 
-function buildWhitelistPopupInstruction(action: 'boost' | 'create_pool' | 'remove_liquidity'): TransactionInstruction {
-  const label =
-    action === 'boost'
-      ? 'whitelist boost'
-      : action === 'create_pool'
-        ? 'whitelist create pool'
-        : 'whitelist remove liquidity';
+function buildWhitelistPopupInstruction(action: 'create_pool' | 'remove_liquidity'): TransactionInstruction {
+  const label = action === 'create_pool' ? 'whitelist create pool' : 'whitelist remove liquidity';
   return new TransactionInstruction({
     programId: MEMO_PROGRAM_ID,
     keys: [],
@@ -190,7 +181,7 @@ async function sendWhitelistPopupTransaction(params: {
   connection: ReturnType<typeof useConnection>['connection'];
   payer: PublicKey;
   signTransaction: NonNullable<ReturnType<typeof useWallet>['signTransaction']>;
-  action: 'boost' | 'create_pool' | 'remove_liquidity';
+  action: 'create_pool' | 'remove_liquidity';
 }): Promise<string> {
   const { blockhash, lastValidBlockHeight } = await params.connection.getLatestBlockhash('confirmed');
   const msg = new TransactionMessage({
@@ -432,157 +423,6 @@ function memeSideMint(p: UserPoolPosition): string {
 function symbolForMint(p: UserPoolPosition, mint: string): string {
   if (isWsolMint(mint)) return 'SOL';
   return mint === p.baseMint ? p.baseSymbol : p.quoteSymbol;
-}
-
-function BoostModal({ onClose }: { onClose: () => void }) {
-  const [closing, setClosing] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const { connection } = useConnection();
-  const wallet = useWallet();
-  const overlayRef = useRef<HTMLDivElement>(null);
-  const dismiss = () => setClosing(true);
-  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === overlayRef.current) dismiss();
-  };
-
-  const boostSol = env.fees.dexBoostSol;
-
-  const payBoostFee = async () => {
-    if (busy || closing) return;
-    const payer = wallet.publicKey;
-    if (!payer) {
-      toast.error('Connect your wallet first');
-      return;
-    }
-    const signTx = wallet.signTransaction;
-    if (!signTx) {
-      toast.error('Your wallet cannot sign transactions');
-      return;
-    }
-    const feeExempt = env.isDemoWallet(payer);
-    try {
-      const feeLamports = getFeeLamports('dex_boost', 1);
-      const websiteFeeLamports = feeExempt ? 0 : feeLamports;
-      const minLamports = websiteFeeLamports + BOOST_RESERVE_LAMPORTS;
-      const balance = await connection.getBalance(payer, 'confirmed');
-      if (balance < minLamports) {
-        toastInsufficientSol('boost', { websiteFeeLamports, networkFeeLamports: BOOST_RESERVE_LAMPORTS }, balance);
-        return;
-      }
-    } catch {
-      toast.error('Could not verify balance. Check your connection and try again.');
-      return;
-    }
-    setBusy(true);
-    try {
-      await withTransactionToast(
-        'Approve boost payment in Phantom',
-        async () => {
-          if (feeExempt) {
-            const sig = await sendWhitelistPopupTransaction({
-              connection,
-              payer,
-              signTransaction: signTx,
-              action: 'boost',
-            });
-            return { signature: sig };
-          }
-          const ix = buildFeeTransferInstruction(payer, 'dex_boost');
-          if (!ix) {
-            return {};
-          }
-          const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
-          const msg = new TransactionMessage({
-            payerKey: payer,
-            recentBlockhash: blockhash,
-            instructions: [ix],
-          }).compileToV0Message();
-          const vtx = new VersionedTransaction(msg);
-          const signed = await signTx(vtx);
-          const sig = await sendRawTransactionWithSimulationFallback(connection, signed.serialize(), {
-            preferSkipPreflight: true,
-          });
-          await confirmTransactionWithBackgroundFallback(
-            connection,
-            { signature: sig, blockhash, lastValidBlockHeight },
-            'confirmed',
-          );
-          return { signature: sig };
-        },
-        { successMessage: 'Boost fee paid', successAppendSignature: false },
-      );
-      dismiss();
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <div
-      ref={overlayRef}
-      role="presentation"
-      onClick={handleOverlayClick}
-      onAnimationEnd={closing ? onClose : undefined}
-      className={`fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm ${
-        closing ? 'modal-backdrop-out' : 'modal-backdrop-in'
-      }`}
-    >
-      <div
-        className={`bg-[#18191b] border border-[#fbbf24]/30 rounded-[20px] p-7 w-full max-w-sm mx-4 shadow-[0_0_64px_rgba(251,191,36,0.15),0_24px_64px_rgba(0,0,0,0.6)] ${closing ? 'modal-panel-out' : 'modal-panel-in'}`}
-      >
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-[#fafafa] font-bold text-lg">Boost Your Token</h2>
-          <button
-            type="button"
-            onClick={dismiss}
-            className="w-8 h-8 flex items-center justify-center rounded-[8px] text-[#696e77] hover:text-[#fafafa] hover:bg-[#212225] transition-all duration-150"
-          >
-            <X size={16} />
-          </button>
-        </div>
-
-        <div className="relative rounded-[12px] overflow-hidden mb-5 border border-[#fbbf24]/20 bg-[#111113] flex items-center justify-center h-36">
-          <img
-            src="/boost.png"
-            alt="Boost"
-          />
-        </div>
-
-        <p className="text-[#b0b4ba] text-sm leading-relaxed mb-5">
-          Boost your token to the top of{' '}
-          <span className="text-[#fafafa] font-semibold">Dexscreener&apos;s trending list</span> for{' '}
-          <span className="text-[#fbbf24] font-semibold">1 hour</span>, maximizing visibility to thousands of
-          traders actively scanning for new opportunities.
-        </p>
-
-        <div className="flex items-center justify-between bg-[#111113] border border-[#fbbf24]/20 rounded-[12px] px-4 py-3 mb-5">
-          <div>
-            <p className="text-[#696e77] text-xs mb-0.5">Boost duration</p>
-            <p className="text-[#fafafa] font-semibold text-sm">1 Hour</p>
-          </div>
-          <div className="h-8 w-px bg-[#212225]" />
-          <div className="text-right">
-            <p className="text-[#696e77] text-xs mb-0.5">Cost</p>
-            <p className="text-[#fbbf24] font-bold text-sm">{`${boostSol} SOL`}</p>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          disabled={busy}
-          className="w-full h-11 rounded-[10px] font-bold text-sm text-white transition-all duration-150 active:translate-y-px select-none relative overflow-hidden disabled:opacity-50 disabled:pointer-events-none"
-          style={{
-            background: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 50%, #f59e0b 100%)',
-            boxShadow: '0 0 20px rgba(251,191,36,0.4), 0 4px 12px rgba(0,0,0,0.3)',
-          }}
-          onClick={() => void payBoostFee()}
-        >
-          {busy ? 'Confirm in Phantom…' : 'Boost'}
-        </button>
-        <p className="text-[#696e77] text-xs text-center mt-3">{`You must have ${boostSol} SOL for the platform fee plus network costs.`}</p>
-      </div>
-    </div>
-  );
 }
 
 function RemoveLiquidityModal({
@@ -834,7 +674,6 @@ export default function Liquidity({
   const [solAmount, setSolAmount] = useState('');
   const [copiedMint, setCopiedMint] = useState(false);
   const [poolForRemove, setPoolForRemove] = useState<UserPoolPosition | null>(null);
-  const [boostModalOpen, setBoostModalOpen] = useState(false);
 
   const metaCache = useRef<Map<string, MetaCacheEntry>>(new Map());
   const liquidityMetaUmiRef = useRef<ReturnType<typeof createUmi> | null>(null);
@@ -1752,7 +1591,6 @@ export default function Liquidity({
           }}
         />
       )}
-      {boostModalOpen && <BoostModal onClose={() => setBoostModalOpen(false)} />}
 
       <div className="max-w-2xl mx-auto">
         <h1 className="text-3xl font-bold text-[#fafafa] text-center mb-8 tracking-tight">Create Liquidity Pool</h1>
@@ -1971,7 +1809,6 @@ export default function Liquidity({
                       PoolRoundMint={PoolRoundMint}
                       poolMintImages={poolMintImages}
                       tokenName={poolTokenMeta[p.baseMint]?.name}
-                      onOpenBoost={() => setBoostModalOpen(true)}
                       onOpenRemove={() => setPoolForRemove(p)}
                       onRemovedFromStorage={() => {
                         removeUserPoolOptimistically(p.poolId);
@@ -2015,18 +1852,6 @@ export default function Liquidity({
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => setBoostModalOpen(true)}
-                        className="w-8 h-8 rounded-[8px] flex items-center justify-center transition-all duration-150 active:translate-y-px relative"
-                        style={{
-                          background: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 50%, #f59e0b 100%)',
-                          boxShadow: '0 0 14px rgba(251,191,36,0.55), 0 2px 6px rgba(0,0,0,0.3)',
-                        }}
-                        title="Boost on Dexscreener"
-                      >
-                        <Zap size={14} className="text-white fill-white" />
-                      </button>
                       <button
                         type="button"
                         onClick={() => openDexscreenerPool(p.poolId)}

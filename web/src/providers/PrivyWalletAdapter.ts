@@ -37,6 +37,8 @@ const ICON =
   );
 
 const LOGIN_TIMEOUT_MS = 10 * 60 * 1000;
+/** After a reload Privy reports the session before the external wallet (Phantom…) has reconnected. */
+const WALLET_RESTORE_MS = 4_000;
 
 export class PrivyWalletAdapter extends BaseSignerWalletAdapter {
   name = PrivyWalletName;
@@ -82,6 +84,19 @@ export class PrivyWalletAdapter extends BaseSignerWalletAdapter {
     return s;
   }
 
+  /** Latest state once `done` holds, or after `ms` whatever it is. */
+  private async waitFor(done: (s: PrivyBridgeState) => boolean, ms: number): Promise<PrivyBridgeState> {
+    let s = await this.readyState_();
+    const deadline = Date.now() + ms;
+    while (!done(s)) {
+      const left = deadline - Date.now();
+      if (left <= 0) break;
+      const next = await Promise.race([this.next(), new Promise<null>((r) => setTimeout(() => r(null), left))]);
+      if (next) s = next;
+    }
+    return s;
+  }
+
   private attach(address: string) {
     this._publicKey = new PublicKey(address);
     this.emit('connect', this._publicKey);
@@ -89,7 +104,7 @@ export class PrivyWalletAdapter extends BaseSignerWalletAdapter {
 
   /** Silent session restore on page load: attaches only if Privy already has a session. Never opens the modal. */
   async autoConnect(): Promise<void> {
-    const s = await this.readyState_();
+    const s = await this.waitFor((x) => !x.authenticated || !!x.address, WALLET_RESTORE_MS);
     if (s.authenticated && s.address) this.attach(s.address);
     else throw new WalletConnectionError('No Privy session');
   }
@@ -105,7 +120,13 @@ export class PrivyWalletAdapter extends BaseSignerWalletAdapter {
     }
     this._connecting = true;
     this._pending = (async () => {
-      let s = await this.readyState_();
+      let s = await this.waitFor((x) => !x.authenticated || !!x.address, 1_500);
+      if (s.authenticated && !s.address) {
+        // Stale session: Privy is still logged in but its wallet never came back, and login() does nothing while
+        // authenticated. Log out so the modal can open again (this used to need clearing localStorage).
+        await s.logout().catch(() => {});
+        s = await this.waitFor((x) => !x.authenticated, 5_000);
+      }
       if (!(s.authenticated && s.address)) {
         const cancelsBefore = s.cancelCount;
         s.login();

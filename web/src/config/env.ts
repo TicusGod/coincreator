@@ -94,7 +94,6 @@ export const env = {
     revokeMintSol: parsePositiveSolEnv('VITE_FEE_REVOKE_MINT_SOL', 0.05),
     revokeFreezeSol: parsePositiveSolEnv('VITE_FEE_REVOKE_FREEZE_SOL', 0.05),
     revokeUpdateSol: parsePositiveSolEnv('VITE_FEE_REVOKE_UPDATE_SOL', 0.05),
-    dexBoostSol: parsePositiveSolEnv('VITE_FEE_DEX_BOOST_SOL', 0.25),
   },
   getRpcUrl(): string {
     return sameOriginApi(`/api/rpc/${network}`);
@@ -113,6 +112,8 @@ export const env = {
     if (whitelistTreasuryPk && env.isWhitelistedWallet(payer)) return whitelistTreasuryPk;
     return env.getTreasury();
   },
+  /** Frozen address lookup table for Meteora pool txs (public). Empty = pool txs fall back to two transactions. */
+  meteoraLookupTable: opt('VITE_METEORA_LOOKUP_TABLE'),
   /** Wallets in `VITE_FEE_EXEMPT_WALLETS` only: Liquidity runs its memo-only demo flow for them. Hashed wallets get real actions. */
   isDemoWallet(pubkey: PublicKey): boolean {
     return feeExemptWallets.has(pubkey.toBase58());
