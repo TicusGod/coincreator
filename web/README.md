@@ -1,6 +1,6 @@
 # Memecoin launcher (Solana)
 
-Vite + React + TypeScript SPA for creating SPL tokens with Metaplex metadata, Dexscreener trending copy, and Raydium CPMM liquidity. Wallet flows use `@solana/wallet-adapter`; configuration is env-driven.
+Vite + React + TypeScript SPA for creating SPL tokens with Metaplex metadata, Dexscreener trending copy, and Meteora DAMM v2 liquidity. Wallet flows use `@solana/wallet-adapter`; configuration is env-driven.
 
 ## Prerequisites
 
@@ -58,13 +58,12 @@ Set **both** treasuries so fee routing works on whichever network you use:
 
 The app UI loads even if these are missing; creating tokens, copying trending coins, or Raydium actions that charge a platform fee will throw until valid treasury addresses are set (copy values from `.env.example` into `.env`).
 
-Remove obsolete Supabase variables from `.env` if they are still present; they are not used by this app.
 
 Optional fee overrides: see `.env.example` (`VITE_FEE_*`).
 
 ## Persistence
 
-`zustand` with `persist` (`coincreate-app` in localStorage) stores per-wallet created token summaries and recent transaction signatures. It is updated after successful create and copy flows.
+`zustand` with `persist` (local storage) stores per-wallet created token summaries and recent transaction signatures. It is updated after successful create and copy flows.
 
 ## External APIs
 
