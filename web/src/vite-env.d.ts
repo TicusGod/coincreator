@@ -23,9 +23,6 @@ interface ImportMetaEnv {
   readonly VITE_WSOL_MINT: string;
   readonly VITE_USDC_MINT_MAINNET: string;
   readonly VITE_USDC_MINT_DEVNET: string;
-  readonly VITE_SUPABASE_URL?: string;
-  readonly VITE_SUPABASE_ANON_KEY?: string;
-  readonly VITE_AXIOM_URL?: string;
 }
 
 interface ImportMeta {
