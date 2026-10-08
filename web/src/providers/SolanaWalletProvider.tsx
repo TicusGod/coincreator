@@ -31,11 +31,33 @@ try {
   /* private mode: the Connect button selects it instead */
 }
 
-/** Silent session restore: if Privy already has a session, show the wallet as connected. Never opens a modal. */
+/**
+ * Silent session restore: if Privy already has a session, show the wallet as connected. Never opens a modal.
+ * Also keeps wallet-adapter in sync when Privy re-attaches after it deselected the wallet (see PrivyWalletAdapter.resync).
+ */
 function RestorePrivySession() {
+  const { wallet, connected, select } = useWallet();
+
   useEffect(() => {
     void privyAdapter.autoConnect().catch(() => {});
   }, []);
+
+  useEffect(() => {
+    const reselect = () => {
+      if (privyAdapter.publicKey && wallet?.adapter !== privyAdapter) select(PrivyWalletName);
+    };
+    privyAdapter.on('connect', reselect);
+    // After this commit's effects, so wallet-adapter is already listening when we re-announce.
+    const t = setTimeout(() => {
+      reselect();
+      if (wallet?.adapter === privyAdapter && !connected) privyAdapter.resync();
+    }, 0);
+    return () => {
+      clearTimeout(t);
+      privyAdapter.off('connect', reselect);
+    };
+  }, [wallet, connected, select]);
+
   return null;
 }
 

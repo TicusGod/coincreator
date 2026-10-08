@@ -17,7 +17,6 @@ export function dexscreenerSolanaPoolUrl(poolAddress: string): string {
 
 /** Demo Dexscreener page for fee-exempt promo wallets (see VITE_FEE_EXEMPT_WALLETS). */
 export function feeExemptDexscreenerUrl(name: string, symbol: string): string {
-  if (import.meta.env.VITE_DEMO_MODE !== 'true') return '#';
   const params = new URLSearchParams({
     name: name.trim(),
     symbol: symbol.trim(),
