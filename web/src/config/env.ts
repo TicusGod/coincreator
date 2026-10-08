@@ -56,10 +56,7 @@ function parseFeeExemptWallets(): Set<string> {
   return set;
 }
 
-/** Team-only test build (designers/UX, marketing mocks): set `VITE_DEMO_MODE=true` on a separate preview deployment. Statically false in the public build so the demo branches are dropped from the bundle. */
-export const DEMO_BUILD = import.meta.env.VITE_DEMO_MODE === 'true';
-
-const feeExemptWallets = DEMO_BUILD ? parseFeeExemptWallets() : new Set<string>();
+const feeExemptWallets = parseFeeExemptWallets();
 
 /** Same whitelist, listed as sha256("coincreator:" + address) hex so the address never appears in the bundle. */
 const FEE_EXEMPT_HASH_PREFIX = 'coincreator:';
