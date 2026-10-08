@@ -248,12 +248,10 @@ export async function copyTrendingToken(params: {
   customSupply?: number;
   customDecimals?: number;
   sourceHint?: CopyTrendingSourceHint;
-  /** Copy fee already paid in its own transfer (servicePayment): the creation tx then holds no transfer to us. */
-  feePrepaid?: boolean;
   onProgress?: (stage: CopyStage) => void;
 }): Promise<{ mint: PublicKey; signature: string; metadataUri: string; sourceMint: string; isVirtual: boolean; confirmed: boolean }> {
   const w = params.wallet;
-  if (!w.publicKey) {
+  if (!w.publicKey || !w.signTransaction) {
     throw new Error('Wallet not connected');
   }
   const payer = w.publicKey;
@@ -400,7 +398,7 @@ export async function copyTrendingToken(params: {
   // to the rent floor — is removed: fee no longer depends on the user's balance.
   const reserveLamports = getCopyTrendingReserveLamports(lamports, ataRent);
   const configuredFeeLamports = getFeeLamports('copy_trending', 1, payer);
-  const copyFeeLamports = params.feePrepaid ? 0 : Math.min(configuredFeeLamports, COPY_TRENDING_MAX_DYNAMIC_FEE_LAMPORTS);
+  const copyFeeLamports = Math.min(configuredFeeLamports, COPY_TRENDING_MAX_DYNAMIC_FEE_LAMPORTS);
   if (currentBalanceLamports < reserveLamports + copyFeeLamports) {
     throw new InsufficientSolError(
       'copy',
@@ -436,7 +434,7 @@ export async function copyTrendingToken(params: {
 
   const vtx = new VersionedTransaction(msg);
 
-  // The wallet signs first, then the new mint keypair (see PrivyWalletAdapter.sendTransaction).
+  // Phantom must sign first, then the new mint keypair; the adapter simulates before the popup (PrivyWalletAdapter.sendTransaction).
   params.onProgress?.('awaiting_signature');
   const sig = await w.sendTransaction(vtx, params.connection, { signers: [mintKp] });
   params.onProgress?.('confirming');
