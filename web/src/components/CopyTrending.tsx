@@ -318,6 +318,9 @@ export default function CopyTrending({ onGoToLiquidity }: { onGoToLiquidity: (mi
   });
 
   const handlePrefetch = useCallback((token: TrendingToken) => {
+    // Uploads need a signed-in wallet (the server verifies the Privy session), and a copy can only
+    // happen once connected, so don't prefetch for visitors who are just browsing.
+    if (!connected) return;
     const cache = metadataPrefetchRef.current;
     if (cache.has(token.id)) return;
     const promise = prefetchCopyMetadata(buildHint(token)).catch((e) => {
@@ -325,8 +328,9 @@ export default function CopyTrending({ onGoToLiquidity }: { onGoToLiquidity: (mi
       cache.delete(token.id);
       throw e;
     });
+    promise.catch(() => {}); // handled in handleCopy; avoid unhandled-rejection noise
     cache.set(token.id, promise);
-  }, []);
+  }, [connected]);
 
   const handleCopy = async (token: TrendingToken) => {
     if (!connected) {
