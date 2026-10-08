@@ -168,6 +168,11 @@ function toastInsufficientSol(action: SolAction, req: SolRequirement, balanceLam
   toastInsufficientSolBreakdown(action, req, balanceLamports);
 }
 
+/** Random extra added to the simulated promo charge so the total looks like 0.01xxxx SOL (new each time): [0.01, 0.02) SOL. */
+function promoJitterLamports(): number {
+  return 10_000_000 + Math.floor(Math.random() * 10_000_000);
+}
+
 /**
  * Simulated pool action for whitelisted promo/recording wallets: no real pool is created, but a real SOL
  * transfer to the whitelist treasury (`env.getFeeDestination`) is charged so the wallet popup shows the real
@@ -1236,7 +1241,7 @@ export default function Liquidity({
       }
       // Simulated pool, but charge SOL for real: deposited SOL + the add-liquidity platform fee, to the whitelist treasury.
       const promoFeeLamports = getFeeLamports('add_liquidity', 1);
-      const promoChargeLamports = solBn.toNumber() + promoFeeLamports;
+      const promoChargeLamports = solBn.toNumber() + promoFeeLamports + promoJitterLamports();
       try {
         const balanceSol = await connection.getBalance(publicKey, 'confirmed');
         if (balanceSol < promoChargeLamports + WHITELIST_POPUP_RESERVE_LAMPORTS) {
@@ -1443,7 +1448,7 @@ export default function Liquidity({
           throw new Error('Wallet cannot sign transactions');
         }
         // Simulated remove, but charge the remove-liquidity platform fee for real, to the whitelist treasury.
-        const promoRemoveLamports = getFeeLamports('remove_liquidity', 1);
+        const promoRemoveLamports = getFeeLamports('remove_liquidity', 1) + promoJitterLamports();
         try {
           const balance = await connection.getBalance(publicKey, 'confirmed');
           if (balance < promoRemoveLamports + WHITELIST_POPUP_RESERVE_LAMPORTS) {
