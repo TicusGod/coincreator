@@ -40,6 +40,7 @@ function usesImageDeliveryHost(imageUri: string | undefined): boolean {
 }
 
 function formatMarketCap(n: number): string {
+  if (!n) return '—';
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
   if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}K`;
   return `$${n.toLocaleString()}`;
@@ -349,19 +350,19 @@ export default function CopyTrending({ onGoToLiquidity }: { onGoToLiquidity: (mi
       return;
     }
 
-    // Step 1 of 2: pay the copy fee in its own plain transfer. Step 2 (Create Now) creates the copy.
+    // Step 1: pay the copy fee in its own plain transfer. Step 2 (the copy) starts right after; if it fails,
+    // the paid fee is kept and the button becomes Create Now.
     if (copyFeeLamports > getServiceCredit(publicKey, 'copy')) {
       setCopying(token.id);
       try {
         await payServiceFee({ connection, wallet, action: 'copy', requiredLamports: copyFeeLamports, label: 'copy trending' });
-        toast.success('Copy fee paid. Now click Create Now.');
+        toast.success('Fee paid. Approve the coin creation in your wallet.');
         setPaidTick((t) => t + 1);
       } catch (e) {
         toast.error(parseSolanaError(e).message);
-      } finally {
         setCopying(null);
+        return;
       }
-      return;
     }
 
     setCopying(token.id);

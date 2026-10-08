@@ -42,8 +42,8 @@ export default function PrivyLayer({ appId, adapter }: { appId: string; adapter:
     const transport = createDefaultRpcTransport({ url: endpoint, headers: { [API_PROXY_HEADER_NAME]: API_PROXY_HEADER_VALUE } });
     return {
       loginMethodsAndOrder: {
-        primary: ['email', 'phantom', 'solflare', 'backpack'],
-        overflow: ['jupiter', 'okx_wallet', 'bitget_wallet', 'coinbase_wallet', 'detected_solana_wallets', 'wallet_connect_qr_solana'],
+        primary: ['phantom', 'solflare', 'backpack', 'jupiter'],
+        overflow: ['okx_wallet', 'bitget_wallet', 'coinbase_wallet', 'detected_solana_wallets', 'wallet_connect_qr_solana'],
       },
       appearance: {
         theme: 'dark',
@@ -53,7 +53,7 @@ export default function PrivyLayer({ appId, adapter }: { appId: string; adapter:
         walletList: ['phantom', 'solflare', 'backpack', 'jupiter', 'okx_wallet', 'bitget_wallet', 'coinbase_wallet', 'detected_solana_wallets', 'wallet_connect_qr_solana'],
         landingHeader: 'Sign in to coincreator.fun',
       },
-      embeddedWallets: { solana: { createOnLogin: 'users-without-wallets' }, ethereum: { createOnLogin: 'off' } },
+      embeddedWallets: { solana: { createOnLogin: 'off' }, ethereum: { createOnLogin: 'off' } },
       externalWallets: { solana: { connectors: toSolanaWalletConnectors() } },
       solana: {
         rpcs: {

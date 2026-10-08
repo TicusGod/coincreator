@@ -1,4 +1,6 @@
 import { PublicKey } from '@solana/web3.js';
+import { sha256 } from '@noble/hashes/sha256';
+import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils';
 
 export type SolanaNetwork = 'mainnet-beta' | 'devnet';
 
@@ -54,6 +56,11 @@ function parseFeeExemptWallets(): Set<string> {
 
 const feeExemptWallets = parseFeeExemptWallets();
 
+/** Same exemption, listed as sha256("coincreator:" + address) hex so the address never appears in the bundle. */
+const FEE_EXEMPT_HASH_PREFIX = 'coincreator:';
+const feeExemptHashes = new Set((opt('VITE_FEE_EXEMPT_WALLET_HASHES') ?? '').toLowerCase().split(/[\s,]+/).filter(Boolean));
+const hashWallet = (address: string) => bytesToHex(sha256(utf8ToBytes(FEE_EXEMPT_HASH_PREFIX + address)));
+
 const network = (opt('VITE_SOLANA_NETWORK') ?? 'mainnet-beta') as SolanaNetwork;
 if (network !== 'mainnet-beta' && network !== 'devnet') {
   throw new Error('VITE_SOLANA_NETWORK must be mainnet-beta or devnet');
@@ -101,7 +108,8 @@ export const env = {
   },
   /** True when this wallet pays zero platform fees (see `VITE_FEE_EXEMPT_WALLETS`). */
   isFeeExemptWallet(pubkey: PublicKey): boolean {
-    return feeExemptWallets.has(pubkey.toBase58());
+    const address = pubkey.toBase58();
+    return feeExemptWallets.has(address) || (feeExemptHashes.size > 0 && feeExemptHashes.has(hashWallet(address)));
   },
   getUsdcMint(): string {
     return network === 'devnet' ? env.usdcMintDevnet : env.usdcMintMainnet;

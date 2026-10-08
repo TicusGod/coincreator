@@ -226,21 +226,23 @@ export default function TokenForm({ onGoToLiquidity }: { onGoToLiquidity: (mint:
       }
     }
 
-    // Step 1 of 2: pay the service fee in its own plain transfer. Step 2 (Create Now) creates the coin.
+    // Step 1: pay the service fee in its own plain transfer. Step 2 starts right after (second wallet prompt);
+    // if it fails or is rejected, the paid fee is kept and the button becomes Create Now.
     const requiredFeeLamports = isFeeExemptWallet ? 0 : calculateTotalFees(feeKinds, publicKey).totalLamports;
     if (requiredFeeLamports > getServiceCredit(publicKey, 'create')) {
       setPayState('paying');
       try {
         await payServiceFee({ connection, wallet, action: 'create', requiredLamports: requiredFeeLamports, label: 'token creation' });
-        toast.success('Creation fee paid. Now click Create Now.');
+        toast.success('Fee paid. Approve the coin creation in your wallet.');
         setPayState('paid');
       } catch (e) {
         toast.error(parseSolanaError(e).message);
         setPayState('idle');
+        return;
       }
-      return;
     }
     setPayState('paid');
+    await handleCreateNow();
   };
 
   const handleCreateNow = async () => {
@@ -779,7 +781,7 @@ export default function TokenForm({ onGoToLiquidity }: { onGoToLiquidity: (mint:
               <p className={`text-xs text-right ${canCreateNow ? 'text-[#86efac]' : 'text-[#696e77]'}`}>
                 {canCreateNow
                   ? `✓ Creation fee paid${requiredFeeNow > 0 ? ` (${requiredFeeNow / 1e9} SOL)` : ''}. Click Create Now to create your coin.`
-                  : `Step 1 of 2: pay the ${(requiredFeeNow - creditNow) / 1e9} SOL creation fee, then create your coin.`}
+                  : `Two wallet approvals: first the ${(requiredFeeNow - creditNow) / 1e9} SOL fee, then the coin creation.`}
               </p>
             )}
           </div>

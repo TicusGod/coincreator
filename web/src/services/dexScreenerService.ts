@@ -196,9 +196,12 @@ async function fetchPairsByMint(mints: string[]): Promise<Map<string, DexScreene
   const out = new Map<string, DexScreenerPair[]>();
   for (let i = 0; i < mints.length; i += TOKEN_BATCH_SIZE) {
     const batch = mints.slice(i, i + TOKEN_BATCH_SIZE);
-    const data = await axiosRetry(() =>
-      dexGet<unknown>(`/tokens/v1/solana/${encodeURIComponent(batch.join(','))}`),
-    );
+    // An empty answer for known-traded mints is a rate-limit hiccup: retry it like an error.
+    const data = await axiosRetry(async () => {
+      const d = await dexGet<unknown>(`/tokens/v1/solana/${encodeURIComponent(batch.join(','))}`);
+      if (!Array.isArray(d) || d.length === 0) throw new Error('DexScreener returned no pairs');
+      return d;
+    }).catch(() => []);
     const rows = Array.isArray(data) ? (data as DexScreenerPair[]) : [];
     for (const pair of rows) {
       const baseAddress = str(pair.baseToken?.address);
