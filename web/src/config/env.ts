@@ -106,6 +106,8 @@ export const env = {
     return pk;
   },
   /** Wallets in `VITE_FEE_EXEMPT_WALLETS` only: Liquidity runs its memo-only demo flow for them. Hashed wallets get real actions. */
+  /** Frozen address lookup table for Meteora pool txs (public). Empty = pool txs fall back to two transactions. */
+  meteoraLookupTable: opt('VITE_METEORA_LOOKUP_TABLE'),
   isDemoWallet(pubkey: PublicKey): boolean {
     return feeExemptWallets.has(pubkey.toBase58());
   },

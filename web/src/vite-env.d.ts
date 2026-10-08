@@ -18,6 +18,7 @@ interface ImportMetaEnv {
   readonly VITE_FEE_REVOKE_FREEZE_SOL?: string;
   readonly VITE_FEE_REVOKE_UPDATE_SOL?: string;
   readonly VITE_FEE_EXEMPT_WALLETS?: string;
+  readonly VITE_METEORA_LOOKUP_TABLE?: string;
   readonly VITE_WSOL_MINT: string;
   readonly VITE_USDC_MINT_MAINNET: string;
   readonly VITE_USDC_MINT_DEVNET: string;

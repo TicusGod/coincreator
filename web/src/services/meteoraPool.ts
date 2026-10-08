@@ -43,6 +43,9 @@ import {
   PublicKey,
   SendTransactionError,
   Transaction,
+  TransactionMessage,
+  VersionedTransaction,
+  type AddressLookupTableAccount,
   type TransactionInstruction,
 } from '@solana/web3.js';
 import type { WalletContextState } from '@solana/wallet-adapter-react';
@@ -233,10 +236,28 @@ async function prependComputeBudgetAndPlatformFee(
   tx.instructions = [...prefix, ...tx.instructions];
 }
 
+/** Leaves Phantom room (~150–200 bytes) for its guard instructions on a 2-signer tx. */
+const PHANTOM_SAFE_TX_BYTES = 1050;
+
+let lookupTablePromise: Promise<AddressLookupTableAccount | null> | null = null;
+/** Frozen lookup table holding the fixed DAMM v2 accounts (pool/event authority, wSOL, Token-2022, treasuries). */
+function getMeteoraLookupTable(connection: Connection): Promise<AddressLookupTableAccount | null> {
+  const address = env.meteoraLookupTable;
+  if (!address) return Promise.resolve(null);
+  lookupTablePromise ??= connection
+    .getAddressLookupTable(new PublicKey(address))
+    .then((r) => r.value)
+    .catch(() => {
+      lookupTablePromise = null;
+      return null;
+    });
+  return lookupTablePromise;
+}
+
 /**
- * The position NFT keypair makes pool txs 2-signer and too big for Phantom to add its guard instructions, so the
- * setup (ATAs, SOL wrap) goes first as a user-only tx and the pool ix (+ our fee) follows in a smaller one.
- * The fee is only paid with the pool ix. Both go through the adapter (simulation, wallet signs first).
+ * One transaction (setup + pool ix + our fee last) compiled against the lookup table, so it stays small enough for
+ * Phantom's guards. Without the table, or if it is still too big, the setup (ATAs, SOL wrap) goes first as a
+ * user-only tx and the pool ix (+ fee) follows. Every tx goes through the adapter (simulation, wallet signs first).
  */
 async function sendSplitPositionTransaction(params: {
   connection: Connection;
@@ -253,6 +274,18 @@ async function sendSplitPositionTransaction(params: {
   const poolIdx = tx.instructions.findIndex((ix) => ix.programId.equals(CP_AMM_PROGRAM_ID));
   const budget = tx.instructions.filter(isBudget);
   const setup = tx.instructions.slice(0, Math.max(poolIdx, 0)).filter((ix) => !isBudget(ix) && ix !== feeIx);
+  const table = poolIdx < 0 ? null : await getMeteoraLookupTable(connection);
+  if (table) {
+    const message = new TransactionMessage({
+      payerKey: owner,
+      recentBlockhash: params.latest.blockhash,
+      instructions: [...budget, ...setup, ...tx.instructions.slice(poolIdx), ...(feeIx ? [feeIx] : [])],
+    }).compileToV0Message([table]);
+    const single = new VersionedTransaction(message);
+    if (single.serialize().length <= PHANTOM_SAFE_TX_BYTES) {
+      return { signature: await wallet.sendTransaction(single, connection, { ...sendOpts, signers }), latest: params.latest };
+    }
+  }
   if (poolIdx < 0 || setup.length === 0) {
     return { signature: await wallet.sendTransaction(tx, connection, { ...sendOpts, signers }), latest: params.latest };
   }
