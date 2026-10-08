@@ -99,7 +99,6 @@ export default function TokenForm({ onGoToLiquidity }: { onGoToLiquidity: (mint:
   const { createToken: runCreate, isCreating, currentStage } = useTokenCreation();
   const addUserToken = useAppStore((s) => s.addUserToken);
   const recordTransaction = useAppStore((s) => s.recordTransaction);
-  const isFeeExemptWallet = !!publicKey && env.isFeeExemptWallet(publicKey);
 
   const [step, setStep] = useState(1);
   const [status, setStatus] = useState<Status>('form');
@@ -204,23 +203,21 @@ export default function TokenForm({ onGoToLiquidity }: { onGoToLiquidity: (mint:
       revokeFreeze: form.revokeFreeze,
       revokeUpdate: form.revokeUpdate,
     });
-    if (!isFeeExemptWallet) {
-      try {
-        const [minLamports, balance] = await Promise.all([
-          estimateMinLamportsForTokenCreation(connection, feeKinds, publicKey),
-          connection.getBalance(publicKey, 'confirmed'),
-        ]);
-        const websiteFeeLamports = calculateTotalFees(feeKinds, publicKey).totalLamports;
-        const ok = hasEnoughSolOrToast(
-          'create',
-          { websiteFeeLamports, networkFeeLamports: minLamports - websiteFeeLamports },
-          balance,
-        );
-        if (!ok) return;
-      } catch {
-        toast.error('Could not verify balance. Check your connection and try again.');
-        return;
-      }
+    try {
+      const [minLamports, balance] = await Promise.all([
+        estimateMinLamportsForTokenCreation(connection, feeKinds),
+        connection.getBalance(publicKey, 'confirmed'),
+      ]);
+      const websiteFeeLamports = calculateTotalFees(feeKinds).totalLamports;
+      const ok = hasEnoughSolOrToast(
+        'create',
+        { websiteFeeLamports, networkFeeLamports: minLamports - websiteFeeLamports },
+        balance,
+      );
+      if (!ok) return;
+    } catch {
+      toast.error('Could not verify balance. Check your connection and try again.');
+      return;
     }
 
     setStatus('confirming');

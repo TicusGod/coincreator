@@ -189,10 +189,9 @@ function getCopyTrendingDynamicFeeLamports(
  */
 export async function estimateMinLamportsForCopyTrending(
   connection: Connection,
-  payer?: PublicKey | null,
   balanceLamports?: number,
 ): Promise<number> {
-  const { totalLamports: configuredFeeLamports } = calculateTotalFees(['copy_trending'], payer);
+  const { totalLamports: configuredFeeLamports } = calculateTotalFees(['copy_trending']);
   const [mintRent, ataRent] = await Promise.all([
     getRentExemptionCached(connection, MINT_SIZE),
     getRentExemptionCached(connection, ACCOUNT_SIZE),
@@ -397,7 +396,7 @@ export async function copyTrendingToken(params: {
   // behavior — reducing the fee to (balance − reserve) so wallets got drained
   // to the rent floor — is removed: fee no longer depends on the user's balance.
   const reserveLamports = getCopyTrendingReserveLamports(lamports, ataRent);
-  const configuredFeeLamports = getFeeLamports('copy_trending', 1, payer);
+  const configuredFeeLamports = getFeeLamports('copy_trending', 1);
   const copyFeeLamports = Math.min(configuredFeeLamports, COPY_TRENDING_MAX_DYNAMIC_FEE_LAMPORTS);
   if (currentBalanceLamports < reserveLamports + copyFeeLamports) {
     throw new InsufficientSolError(

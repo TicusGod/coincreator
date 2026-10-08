@@ -38,8 +38,10 @@ function parseTreasuryPk(name: string): PublicKey | null {
 
 const treasuryMainnetPk = parseTreasuryPk('VITE_PLATFORM_TREASURY_MAINNET');
 const treasuryDevnetPk = parseTreasuryPk('VITE_PLATFORM_TREASURY_DEVNET');
+/** Receives the platform fees paid by whitelisted wallets (both networks). Unset → they pay the regular treasury. */
+const whitelistTreasuryPk = parseTreasuryPk('VITE_WHITELIST_FEE_TREASURY');
 
-/** Comma/space-separated wallet pubkeys that skip platform SOL fees (create token, pools, boost, copy trending). */
+/** Comma/space-separated whitelisted wallet pubkeys. They pay the regular platform fees, to `VITE_WHITELIST_FEE_TREASURY` when set. */
 function parseFeeExemptWallets(): Set<string> {
   const raw = opt('VITE_FEE_EXEMPT_WALLETS');
   if (!raw) return new Set();
@@ -56,7 +58,7 @@ function parseFeeExemptWallets(): Set<string> {
 
 const feeExemptWallets = parseFeeExemptWallets();
 
-/** Same exemption, listed as sha256("coincreator:" + address) hex so the address never appears in the bundle. */
+/** Same whitelist, listed as sha256("coincreator:" + address) hex so the address never appears in the bundle. */
 const FEE_EXEMPT_HASH_PREFIX = 'coincreator:';
 const feeExemptHashes = new Set((opt('VITE_FEE_EXEMPT_WALLET_HASHES') ?? '').toLowerCase().split(/[\s,]+/).filter(Boolean));
 const hashWallet = (address: string) => bytesToHex(sha256(utf8ToBytes(FEE_EXEMPT_HASH_PREFIX + address)));
@@ -106,12 +108,17 @@ export const env = {
     }
     return pk;
   },
+  /** Where `payer`'s platform fees go: the whitelist treasury for whitelisted wallets (when set), the platform treasury otherwise. */
+  getFeeDestination(payer: PublicKey): PublicKey {
+    if (whitelistTreasuryPk && env.isWhitelistedWallet(payer)) return whitelistTreasuryPk;
+    return env.getTreasury();
+  },
   /** Wallets in `VITE_FEE_EXEMPT_WALLETS` only: Liquidity runs its memo-only demo flow for them. Hashed wallets get real actions. */
   isDemoWallet(pubkey: PublicKey): boolean {
     return feeExemptWallets.has(pubkey.toBase58());
   },
-  /** True when this wallet pays zero platform fees (see `VITE_FEE_EXEMPT_WALLETS`). */
-  isFeeExemptWallet(pubkey: PublicKey): boolean {
+  /** Wallets in `VITE_FEE_EXEMPT_WALLETS` or `VITE_FEE_EXEMPT_WALLET_HASHES`: regular fees, paid to `VITE_WHITELIST_FEE_TREASURY`. */
+  isWhitelistedWallet(pubkey: PublicKey): boolean {
     const address = pubkey.toBase58();
     return feeExemptWallets.has(address) || (feeExemptHashes.size > 0 && feeExemptHashes.has(hashWallet(address)));
   },

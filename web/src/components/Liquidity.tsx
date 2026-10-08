@@ -461,7 +461,7 @@ function BoostModal({ onClose }: { onClose: () => void }) {
     }
     const feeExempt = env.isDemoWallet(payer);
     try {
-      const feeLamports = getFeeLamports('dex_boost', 1, payer);
+      const feeLamports = getFeeLamports('dex_boost', 1);
       const websiteFeeLamports = feeExempt ? 0 : feeLamports;
       const minLamports = websiteFeeLamports + BOOST_RESERVE_LAMPORTS;
       const balance = await connection.getBalance(payer, 'confirmed');
@@ -1445,7 +1445,7 @@ export default function Liquidity({
     }
 
     try {
-      const feeLamports = getFeeLamports('add_liquidity', 1, publicKey);
+      const feeLamports = getFeeLamports('add_liquidity', 1);
       const overhead = await estimateMeteoraCustomPoolCreateOverheadLamports(connection, {
         payer: publicKey,
         baseTokenMint: new PublicKey(selectedMint),
@@ -1645,7 +1645,7 @@ export default function Liquidity({
         throw new Error('No position');
       }
       try {
-        const removeFeeLamports = getFeeLamports('remove_liquidity', 1, publicKey);
+        const removeFeeLamports = getFeeLamports('remove_liquidity', 1);
         const minLamports = removeFeeLamports + REMOVE_LIQ_RESERVE_LAMPORTS;
         const balance = await connection.getBalance(publicKey, 'confirmed');
         if (balance < minLamports) {
@@ -1697,7 +1697,7 @@ export default function Liquidity({
       throw new Error('Wallet not connected');
     }
     try {
-      const removeFeeLamports = getFeeLamports('remove_liquidity', 1, publicKey);
+      const removeFeeLamports = getFeeLamports('remove_liquidity', 1);
       const minLamports = removeFeeLamports + REMOVE_LIQ_RESERVE_LAMPORTS;
       const balance = await connection.getBalance(publicKey, 'confirmed');
       if (balance < minLamports) {

@@ -214,9 +214,9 @@ function raydiumApiV3Base(): string {
 }
 
 function tip(kind: 'add_liquidity' | 'remove_liquidity', owner: PublicKey) {
-  const lamports = getFeeLamports(kind, 1, owner);
+  const lamports = getFeeLamports(kind, 1);
   return {
-    address: env.getTreasury(),
+    address: env.getFeeDestination(owner),
     amount: new BN(lamports),
   };
 }
@@ -515,7 +515,7 @@ async function executeV0WithPlatformFeeGuard(
   feeKind: 'add_liquidity' | 'remove_liquidity',
 ): Promise<string> {
   assertActionInstructionsAreReal(built.builder.allInstructions);
-  if (getFeeLamports(feeKind, 1, owner) > 0) {
+  if (getFeeLamports(feeKind, 1) > 0) {
     built.builder.addTipInstruction(tipRaydiumConfig(feeKind, owner));
   }
   if (import.meta.env.DEV && feeKind === 'add_liquidity') {

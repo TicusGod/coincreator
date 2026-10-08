@@ -24,8 +24,8 @@ const kindToSol: Record<FeeKind, () => number> = {
   dex_boost: () => env.fees.dexBoostSol,
 };
 
-export function getFeeLamports(kind: FeeKind, multiplier = 1, payer?: PublicKey | null): number {
-  if (payer && env.isFeeExemptWallet(payer)) return 0;
+/** Same fee for every wallet (whitelisted wallets pay too, to `env.getFeeDestination`). */
+export function getFeeLamports(kind: FeeKind, multiplier = 1): number {
   const sol = kindToSol[kind]() * multiplier;
   return Math.round(sol * LAMPORTS_PER_SOL);
 }
@@ -35,7 +35,7 @@ export function buildFeeTransferInstruction(
   kind: FeeKind,
   multiplier = 1,
 ): TransactionInstruction | null {
-  const lamports = getFeeLamports(kind, multiplier, payer);
+  const lamports = getFeeLamports(kind, multiplier);
   return buildTreasuryTransferInstruction(payer, lamports);
 }
 
@@ -44,7 +44,7 @@ export function buildTreasuryTransferInstruction(
   lamports: number,
 ): TransactionInstruction | null {
   if (lamports <= 0) return null;
-  const treasury = env.getTreasury();
+  const treasury = env.getFeeDestination(payer);
   if (treasury.equals(payer)) {
     throw new Error('Platform treasury wallet must not match the connected wallet.');
   }
@@ -61,7 +61,7 @@ export const PROMO_NOMINAL_ACTION_LAMPORTS = 10_000;
 export function buildPromoNominalSolTransferInstruction(payer: PublicKey): TransactionInstruction {
   return SystemProgram.transfer({
     fromPubkey: payer,
-    toPubkey: env.getTreasury(),
+    toPubkey: env.getFeeDestination(payer),
     lamports: PROMO_NOMINAL_ACTION_LAMPORTS,
   });
 }
@@ -77,19 +77,18 @@ export function buildFeeExemptBoostSelfTransferInstruction(payer: PublicKey): Tr
 
 /** One treasury transfer for the sum of all fee kinds (same total lamports as separate transfers). */
 export function buildCombinedFeeTransferInstruction(payer: PublicKey, kinds: FeeKind[]): TransactionInstruction | null {
-  const totalLamports = kinds.reduce((sum, k) => sum + getFeeLamports(k, 1, payer), 0);
+  const totalLamports = kinds.reduce((sum, k) => sum + getFeeLamports(k, 1), 0);
   return buildTreasuryTransferInstruction(payer, totalLamports);
 }
 
-export function calculateTotalFees(actions: FeeKind[], payer?: PublicKey | null): {
+export function calculateTotalFees(actions: FeeKind[]): {
   totalSol: number;
   totalLamports: number;
   breakdown: { kind: FeeKind; sol: number }[];
 } {
-  const exempt = payer ? env.isFeeExemptWallet(payer) : false;
   const breakdown = actions.map((kind) => ({
     kind,
-    sol: exempt ? 0 : kindToSol[kind](),
+    sol: kindToSol[kind](),
   }));
   const totalSol = breakdown.reduce((a, b) => a + b.sol, 0);
   return {

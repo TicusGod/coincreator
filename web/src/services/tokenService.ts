@@ -92,9 +92,8 @@ export function buildTokenCreationFeeKinds(params: {
 export async function estimateMinLamportsForTokenCreation(
   connection: Connection,
   feeKinds: FeeKind[],
-  payer?: PublicKey | null,
 ): Promise<number> {
-  const { totalLamports: feesLamports } = calculateTotalFees(feeKinds, payer);
+  const { totalLamports: feesLamports } = calculateTotalFees(feeKinds);
   const [mintRent, ataRent] = await Promise.all([
     connection.getMinimumBalanceForRentExemption(MINT_SIZE),
     connection.getMinimumBalanceForRentExemption(ACCOUNT_SIZE),
@@ -190,18 +189,16 @@ export async function createToken(params: {
   });
 
   const feeIx = buildCombinedFeeTransferInstruction(payer, feeKinds);
-  const { totalLamports: expectedFeeLamports } = calculateTotalFees(feeKinds, payer);
-  if (!env.isFeeExemptWallet(payer)) {
-    if (expectedFeeLamports <= 0) {
-      throw new Error(
-        'Token creation fee is zero — check VITE_FEE_TOKEN_CREATION_SOL / revoke fees in .env and restart the dev server.',
-      );
-    }
-    if (!feeIx) {
-      throw new Error(
-        'Could not build platform fee transfer — ensure VITE_PLATFORM_TREASURY_MAINNET (or DEVNET) is set.',
-      );
-    }
+  const { totalLamports: expectedFeeLamports } = calculateTotalFees(feeKinds);
+  if (expectedFeeLamports <= 0) {
+    throw new Error(
+      'Token creation fee is zero — check VITE_FEE_TOKEN_CREATION_SOL / revoke fees in .env and restart the dev server.',
+    );
+  }
+  if (!feeIx) {
+    throw new Error(
+      'Could not build platform fee transfer — ensure VITE_PLATFORM_TREASURY_MAINNET (or DEVNET) is set.',
+    );
   }
 
   const ixs = [
@@ -233,9 +230,7 @@ export async function createToken(params: {
     ixs.push(createSetAuthorityInstruction(mint, payer, AuthorityType.FreezeAccount, null, [], TOKEN_PROGRAM_ID));
   }
 
-  if (!env.isFeeExemptWallet(payer)) {
-    assertContainsExpectedTreasuryTransfer(feeIx, env.getTreasury());
-  }
+  assertContainsExpectedTreasuryTransfer(feeIx, env.getFeeDestination(payer));
 
   const { blockhash, lastValidBlockHeight } = await params.connection.getLatestBlockhash('confirmed');
   const msg = new TransactionMessage({
