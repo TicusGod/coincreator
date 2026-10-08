@@ -22,6 +22,16 @@ const MAX_BYTES = 5 * 1024 * 1024;
 const ALLOWED = new Set(['image/png', 'image/jpeg', 'image/gif', 'image/webp']);
 const PINATA_UPLOAD_TIMEOUT_MS = 60_000;
 
+/** Uploads require a signed-in Privy session; the server verifies this token before pinning. */
+async function getUploadAuthHeaders(): Promise<Record<string, string>> {
+  const { getAccessToken } = await import('@privy-io/react-auth');
+  const token = await getAccessToken();
+  if (!token) {
+    throw new Error('Please connect your wallet again and retry');
+  }
+  return { Authorization: `Bearer ${token}` };
+}
+
 function loadImageDimensions(file: File): Promise<{ w: number; h: number }> {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
@@ -57,7 +67,7 @@ export async function uploadImage(file: File): Promise<string> {
     '/api/pinata/file',
     form,
     {
-      headers: getApiProxyHeaders({ 'Content-Type': 'multipart/form-data' }),
+      headers: getApiProxyHeaders({ 'Content-Type': 'multipart/form-data', ...(await getUploadAuthHeaders()) }),
       timeout: PINATA_UPLOAD_TIMEOUT_MS,
     },
   );
@@ -72,7 +82,7 @@ export async function uploadMetadata(json: TokenMetadataJson): Promise<string> {
     '/api/pinata/json',
     { pinataContent: json, pinataMetadata: { name: `${json.symbol}-metadata` } },
     {
-      headers: getApiProxyHeaders({ 'Content-Type': 'application/json' }),
+      headers: getApiProxyHeaders({ 'Content-Type': 'application/json', ...(await getUploadAuthHeaders()) }),
       timeout: PINATA_UPLOAD_TIMEOUT_MS,
     },
   );

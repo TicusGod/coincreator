@@ -183,9 +183,101 @@ export function getClientIp(req) {
   return 'unknown';
 }
 
-export function takeRateLimit(req, bucketName, { limit, windowMs, cost = 1 }) {
+// Privy access tokens (ES256 JWTs) are verified against Privy's published keys with Node's built-in WebCrypto.
+// The app ID is public, so a server env override is optional.
+const PRIVY_APP_ID = readServerEnv('PRIVY_APP_ID') ?? readServerEnv('VITE_PRIVY_APP_ID') ?? 'cmuxxllvy00hv0cjnmxxbsrl1';
+const PRIVY_JWKS_URL = `https://auth.privy.io/api/v1/apps/${PRIVY_APP_ID}/jwks.json`;
+const JWKS_TTL_MS = 10 * 60 * 1000;
+let jwksCache = globalThis.__coincreatorPrivyJwks ?? null;
+
+function base64UrlToBytes(value) {
+  return new Uint8Array(Buffer.from(value, 'base64url'));
+}
+
+async function getPrivyKeys(forceRefresh = false) {
+  if (!forceRefresh && jwksCache && jwksCache.expiresAt > Date.now()) return jwksCache.keys;
+  const response = await fetch(PRIVY_JWKS_URL, { headers: { Accept: 'application/json' } });
+  if (!response.ok) throw new Error(`jwks_http_${response.status}`);
+  const body = await response.json();
+  const keys = Array.isArray(body?.keys) ? body.keys.filter((k) => k?.kty === 'EC' && k?.crv === 'P-256') : [];
+  jwksCache = { keys, expiresAt: Date.now() + JWKS_TTL_MS };
+  globalThis.__coincreatorPrivyJwks = jwksCache;
+  return keys;
+}
+
+async function verifyEs256(token, jwk) {
+  const [h, p, sig] = token.split('.');
+  const key = await crypto.subtle.importKey(
+    'jwk',
+    { kty: 'EC', crv: 'P-256', x: jwk.x, y: jwk.y, ext: true },
+    { name: 'ECDSA', namedCurve: 'P-256' },
+    false,
+    ['verify'],
+  );
+  return crypto.subtle.verify(
+    { name: 'ECDSA', hash: 'SHA-256' },
+    key,
+    base64UrlToBytes(sig),
+    new TextEncoder().encode(`${h}.${p}`),
+  );
+}
+
+/** Returns the verified claims of a Privy access token, or throws. */
+export async function verifyPrivyAccessToken(token) {
+  const parts = token.split('.');
+  if (parts.length !== 3) throw new Error('malformed');
+  const header = JSON.parse(Buffer.from(parts[0], 'base64url').toString('utf8'));
+  const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
+  if (header.alg !== 'ES256') throw new Error('bad_alg');
+
+  let keys = await getPrivyKeys();
+  let candidates = header.kid ? keys.filter((k) => k.kid === header.kid) : keys;
+  if (candidates.length === 0) {
+    keys = await getPrivyKeys(true); // key rotation
+    candidates = header.kid ? keys.filter((k) => k.kid === header.kid) : keys;
+  }
+  let valid = false;
+  for (const jwk of candidates) {
+    if (await verifyEs256(token, jwk)) {
+      valid = true;
+      break;
+    }
+  }
+  if (!valid) throw new Error('bad_signature');
+
+  const now = Math.floor(Date.now() / 1000);
+  const audiences = Array.isArray(payload.aud) ? payload.aud : [payload.aud];
+  if (payload.iss !== 'privy.io') throw new Error('bad_issuer');
+  if (!audiences.includes(PRIVY_APP_ID)) throw new Error('bad_audience');
+  if (typeof payload.exp !== 'number' || payload.exp + 30 < now) throw new Error('expired');
+  if (typeof payload.nbf === 'number' && payload.nbf - 30 > now) throw new Error('not_yet_valid');
+  if (typeof payload.sub !== 'string' || !payload.sub) throw new Error('missing_sub');
+  return payload;
+}
+
+/**
+ * Requires a logged-in Privy user (Authorization: Bearer <access token>). Returns the Privy user id,
+ * or sends 401 and returns null. Headers like Origin can be faked from scripts; a valid login cannot.
+ */
+export async function requirePrivyUser(req, res) {
+  const auth = firstHeaderValue(req.headers.authorization) ?? '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';
+  if (!token) {
+    sendJson(res, 401, { error: 'login_required' });
+    return null;
+  }
+  try {
+    const claims = await verifyPrivyAccessToken(token);
+    return claims.sub;
+  } catch {
+    sendJson(res, 401, { error: 'invalid_session' });
+    return null;
+  }
+}
+
+export function takeRateLimit(req, bucketName, { limit, windowMs, cost = 1, key: keyOverride }) {
   const now = Date.now();
-  const key = `${bucketName}:${getClientIp(req)}`;
+  const key = `${bucketName}:${keyOverride ?? getClientIp(req)}`;
   const current = rateBuckets.get(key);
   const bucket =
     current && current.resetAt > now

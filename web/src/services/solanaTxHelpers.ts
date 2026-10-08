@@ -68,15 +68,15 @@ export async function assertSimulationOk(
 }
 
 /**
- * Some RPCs return flaky preflight simulation for large txs (metadata + mint + fees)
- * even when the same serialized transaction lands successfully. Retry once without preflight.
+ * Sends a signed transaction, retrying only on transient RPC/network errors. A preflight simulation
+ * failure is final (every tx is already simulated before the wallet popup in assertSimulationOk).
  */
 export async function sendRawTransactionWithSimulationFallback(
   connection: Connection,
   rawTx: Uint8Array,
   options: SendRawTransactionOptions = {},
 ): Promise<TransactionSignature> {
-  let forceSkipPreflight = options.preferSkipPreflight === true;
+  const forceSkipPreflight = options.preferSkipPreflight === true;
   let lastError: unknown;
 
   for (let attempt = 0; attempt < SEND_RETRY_DELAYS_MS.length; attempt++) {
@@ -94,9 +94,10 @@ export async function sendRawTransactionWithSimulationFallback(
     } catch (e) {
       lastError = e;
 
+      // A failed preflight simulation means the tx would fail on chain: stop instead of resending it
+      // without checks (that would only burn the user's network fee on a failed transaction).
       if (isSimulationPreflightFailure(e)) {
-        forceSkipPreflight = true;
-        continue;
+        throw e;
       }
 
       if (!isRetryableSendFailure(e)) {

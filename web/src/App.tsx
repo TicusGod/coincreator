@@ -38,13 +38,13 @@ export default function App() {
   }, [currentPage]);
 
   return (
-    <div className="min-h-screen bg-[#111113] text-[#fafafa]">
+    <div className="min-h-screen flex flex-col bg-[#111113] text-[#fafafa]">
       <WalletStoreSync />
       <Toaster position="bottom-right" toastOptions={{ duration: 5000 }} />
       <AnnouncementBanner />
       <Header currentPage={currentPage} onPageChange={setCurrentPage} />
 
-      <main>
+      <main className="flex-1">
         {currentPage === 'create' ? (
           <>
             <HeroBanner />
@@ -73,6 +73,15 @@ export default function App() {
           />
         )}
       </main>
+
+      <footer className="py-6 text-center text-xs text-white">
+        <a href="/terms" target="_blank" rel="noopener" className="mx-3 hover:underline">
+          Terms &amp; Conditions
+        </a>
+        <a href="/privacy" target="_blank" rel="noopener" className="mx-3 hover:underline">
+          Privacy Policy
+        </a>
+      </footer>
     </div>
   );
 }

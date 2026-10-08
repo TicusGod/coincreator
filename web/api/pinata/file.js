@@ -3,6 +3,7 @@ import {
   readRawBody,
   relayUpstreamResponse,
   rejectCrossSite,
+  requirePrivyUser,
   sendJson,
   takeRateLimit,
 } from '../_serverUtil.js';
@@ -19,6 +20,15 @@ export default async function pinataFileProxy(req, res) {
     return sendJson(res, 405, { error: 'method_not_allowed' });
   }
   if (rejectCrossSite(req, res)) return;
+
+  // Only signed-in users can pin files to our Pinata account.
+  const userId = await requirePrivyUser(req, res);
+  if (!userId) return;
+  const perUser = takeRateLimit(req, 'pinata:file:user', { limit: 50, windowMs: 60_000, cost: 10, key: userId });
+  if (!perUser.ok) {
+    res.setHeader('Retry-After', String(perUser.retryAfterSeconds));
+    return sendJson(res, 429, { error: 'rate_limited', retryAfter: perUser.retryAfterSeconds });
+  }
 
   const limited = takeRateLimit(req, 'pinata:file', {
     limit: 10,

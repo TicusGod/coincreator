@@ -22,6 +22,13 @@ function proxyToAbsoluteUrl(targetUrl: string, extraHeaders: Record<string, stri
   };
 }
 
+// Vercel exposes system env vars to the build with the framework prefix (VITE_VERCEL_GIT_REPO_OWNER, commit
+// author, deployment id…). env.ts reads import.meta.env by name, so Vite would inline every VITE_* var into the
+// public bundle. Drop Vercel's so repo / author / deployment details never ship to browsers.
+for (const key of Object.keys(process.env)) {
+  if (key.startsWith('VITE_VERCEL_')) delete process.env[key];
+}
+
 export default defineConfig(({ mode }) => {
   const serverEnv = loadEnv(mode, process.cwd(), '');
   const devProxy: Record<string, string | ProxyOptions> = {};
