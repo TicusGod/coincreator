@@ -32,7 +32,6 @@ type FormData = {
   modifyCreator: boolean;
   creatorName: string;
   creatorWebsite: string;
-  dexBoost: boolean;
   revokeFreeze: boolean;
   revokeMint: boolean;
   revokeUpdate: boolean;
@@ -123,7 +122,6 @@ export default function TokenForm({ onGoToLiquidity }: { onGoToLiquidity: (mint:
     modifyCreator: false,
     creatorName: '',
     creatorWebsite: '',
-    dexBoost: true,
     revokeFreeze: true,
     revokeMint: true,
     revokeUpdate: true,
@@ -302,7 +300,7 @@ export default function TokenForm({ onGoToLiquidity }: { onGoToLiquidity: (mint:
       decimals: '9', supply: '1000000000', description: '',
       website: '', twitter: '', telegram: '', discord: '',
       modifyCreator: false, creatorName: '', creatorWebsite: '',
-      dexBoost: true, revokeFreeze: true, revokeMint: true, revokeUpdate: true,
+      revokeFreeze: true, revokeMint: true, revokeUpdate: true,
     });
     setStep(1);
     setStatus('form');
@@ -591,49 +589,6 @@ export default function TokenForm({ onGoToLiquidity }: { onGoToLiquidity: (mint:
                   </div>
                 </div>
               )}
-            </div>
-
-            {/* Dexscreener Token Boost toggle */}
-            <div
-              className={`relative flex items-center justify-between py-4 overflow-hidden rounded-[12px] px-4 -mx-4 transition-all duration-300 ${
-                form.dexBoost ? 'bg-[#052e16]/60' : ''
-              }`}
-            >
-              {form.dexBoost && (
-                <span className="pointer-events-none absolute inset-0 dex-shimmer" />
-              )}
-              <div className="pr-4 relative z-10">
-                <p className="text-[#fafafa] font-semibold text-sm">Dexscreener Token Boost</p>
-                <p
-                  className={`text-xs mt-0.5 transition-colors duration-300 ${
-                    form.dexBoost ? 'text-[#e4e4e7]' : 'text-[#696e77]'
-                  }`}
-                >
-                  Get your token trending on Dexscreener.
-                </p>
-              </div>
-              <div className="flex items-center gap-3 shrink-0 relative z-10">
-                <span
-                  className={`text-xs transition-all duration-150 ${
-                    form.dexBoost ? 'text-[#86efac] font-bold' : 'text-[#696e77] font-normal'
-                  }`}
-                >
-                  FREE
-                </span>
-                <button
-                  type="button"
-                  onClick={() => set('dexBoost', !form.dexBoost)}
-                  className={`relative w-10 h-[22px] rounded-full transition-colors duration-150 ${
-                    form.dexBoost ? 'bg-[#86efac]' : 'bg-[#212225]'
-                  }`}
-                >
-                  <span
-                    className={`absolute top-0.5 left-0.5 w-[18px] h-[18px] bg-white rounded-full shadow transition-transform duration-150 ${
-                      form.dexBoost ? 'translate-x-[18px]' : ''
-                    }`}
-                  />
-                </button>
-              </div>
             </div>
 
             {/* Revoke cards */}

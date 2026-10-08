@@ -14,7 +14,6 @@ interface ImportMetaEnv {
   readonly VITE_FEE_COPY_TRENDING_SOL: string;
   readonly VITE_FEE_ADD_LIQUIDITY_SOL: string;
   readonly VITE_FEE_REMOVE_LIQUIDITY_SOL: string;
-  readonly VITE_FEE_DEX_BOOST_SOL?: string;
   readonly VITE_FEE_REVOKE_MINT_SOL?: string;
   readonly VITE_FEE_REVOKE_FREEZE_SOL?: string;
   readonly VITE_FEE_REVOKE_UPDATE_SOL?: string;

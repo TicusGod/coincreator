@@ -39,7 +39,7 @@ function parseTreasuryPk(name: string): PublicKey | null {
 const treasuryMainnetPk = parseTreasuryPk('VITE_PLATFORM_TREASURY_MAINNET');
 const treasuryDevnetPk = parseTreasuryPk('VITE_PLATFORM_TREASURY_DEVNET');
 
-/** Comma/space-separated wallet pubkeys that skip platform SOL fees (create token, pools, boost, copy trending). */
+/** Comma/space-separated wallet pubkeys that skip platform SOL fees (create token, pools, copy trending). */
 function parseFeeExemptWallets(): Set<string> {
   const raw = opt('VITE_FEE_EXEMPT_WALLETS');
   if (!raw) return new Set();
@@ -92,7 +92,6 @@ export const env = {
     revokeMintSol: parsePositiveSolEnv('VITE_FEE_REVOKE_MINT_SOL', 0.05),
     revokeFreezeSol: parsePositiveSolEnv('VITE_FEE_REVOKE_FREEZE_SOL', 0.05),
     revokeUpdateSol: parsePositiveSolEnv('VITE_FEE_REVOKE_UPDATE_SOL', 0.05),
-    dexBoostSol: parsePositiveSolEnv('VITE_FEE_DEX_BOOST_SOL', 0.25),
   },
   getRpcUrl(): string {
     return sameOriginApi(`/api/rpc/${network}`);

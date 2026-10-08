@@ -1,14 +1,13 @@
 import toast from 'react-hot-toast';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
 
-export type SolAction = 'create' | 'copy' | 'add_liquidity' | 'remove_liquidity' | 'boost';
+export type SolAction = 'create' | 'copy' | 'add_liquidity' | 'remove_liquidity';
 
 const ACTION_LABEL: Record<SolAction, string> = {
   create: 'Creating this coin',
   copy: 'Copying this coin',
   add_liquidity: 'Adding liquidity',
   remove_liquidity: 'Removing liquidity',
-  boost: 'Boosting on Dexscreener',
 };
 
 export type SolRequirement = {

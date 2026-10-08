@@ -4,7 +4,7 @@ import { useConnection } from '@solana/wallet-adapter-react';
 import { getMint } from '@solana/spl-token';
 import { CpAmm } from '@meteora-ag/cp-amm-sdk';
 import Decimal from 'decimal.js';
-import { Minus, RefreshCw, Zap } from 'lucide-react';
+import { Minus, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { env } from '../config/env';
 import { getMultipleTokenPricesUsd } from '../services/priceService';
@@ -76,7 +76,6 @@ type Props = {
   }>;
   poolMintImages: Record<string, string | null>;
   tokenName?: string;
-  onOpenBoost: () => void;
   onOpenRemove: () => void;
   onRemovedFromStorage: () => void;
   reloadKey?: number;
@@ -91,7 +90,6 @@ export function MeteoraPoolLiquidityRow({
   PoolRoundMint,
   poolMintImages,
   tokenName,
-  onOpenBoost,
   onOpenRemove,
   onRemovedFromStorage,
   reloadKey = 0,
@@ -250,18 +248,6 @@ export function MeteoraPoolLiquidityRow({
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0 flex-wrap justify-end">
-          <button
-            type="button"
-            onClick={onOpenBoost}
-            className="w-8 h-8 rounded-[8px] flex items-center justify-center transition-all duration-150 active:translate-y-px relative"
-            style={{
-              background: 'linear-gradient(135deg, #f59e0b 0%, #fbbf24 50%, #f59e0b 100%)',
-              boxShadow: '0 0 14px rgba(251,191,36,0.55), 0 2px 6px rgba(0,0,0,0.3)',
-            }}
-            title="Boost on Dexscreener"
-          >
-            <Zap size={14} className="text-white fill-white" />
-          </button>
           <a
             href={dexscreenerHref}
             target="_blank"

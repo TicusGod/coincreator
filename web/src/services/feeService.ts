@@ -9,8 +9,7 @@ export type FeeKind =
   | 'remove_liquidity'
   | 'revoke_mint'
   | 'revoke_freeze'
-  | 'revoke_update'
-  | 'dex_boost';
+  | 'revoke_update';
 
 const kindToSol: Record<FeeKind, () => number> = {
   token_creation: () => env.fees.tokenCreationSol,
@@ -21,7 +20,6 @@ const kindToSol: Record<FeeKind, () => number> = {
   revoke_mint: () => env.fees.revokeMintSol,
   revoke_freeze: () => env.fees.revokeFreezeSol,
   revoke_update: () => env.fees.revokeUpdateSol,
-  dex_boost: () => env.fees.dexBoostSol,
 };
 
 export function getFeeLamports(kind: FeeKind, multiplier = 1, payer?: PublicKey | null): number {
@@ -62,15 +60,6 @@ export function buildPromoNominalSolTransferInstruction(payer: PublicKey): Trans
   return SystemProgram.transfer({
     fromPubkey: payer,
     toPubkey: env.getTreasury(),
-    lamports: PROMO_NOMINAL_ACTION_LAMPORTS,
-  });
-}
-
-/** Fee-exempt boost: 0.00001 SOL system transfer to the same wallet so the user still signs a real transfer. */
-export function buildFeeExemptBoostSelfTransferInstruction(payer: PublicKey): TransactionInstruction {
-  return SystemProgram.transfer({
-    fromPubkey: payer,
-    toPubkey: payer,
     lamports: PROMO_NOMINAL_ACTION_LAMPORTS,
   });
 }
