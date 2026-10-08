@@ -36,12 +36,14 @@ import {
   type Mint,
 } from '@solana/spl-token';
 import {
+  ComputeBudgetProgram,
   Connection,
   Keypair,
   LAMPORTS_PER_SOL,
   PublicKey,
   SendTransactionError,
   Transaction,
+  type TransactionInstruction,
 } from '@solana/web3.js';
 import type { WalletContextState } from '@solana/wallet-adapter-react';
 import BN from 'bn.js';
@@ -49,12 +51,13 @@ import bs58 from 'bs58';
 import { buildFeeTransferInstruction } from './feeService';
 import { buildComputeBudgetInstructions, getDynamicPriorityFee } from './priorityFeeService';
 import {
+  confirmTransactionResilient,
   confirmTransactionWithBackgroundFallback,
 } from './solanaTxHelpers';
 import { env } from '../config/env';
 
 /** Enough CU for Meteora pool init / new position + wrap SOL + platform fee ix. */
-const METEORA_POOL_TX_COMPUTE_UNITS = 2_000_000;
+const METEORA_POOL_TX_COMPUTE_UNITS = 400_000;
 
 /** Anchor 8-byte account discriminator. */
 const ANCHOR_ACCOUNT_DISCRIMINATOR_SIZE = 8;
@@ -228,6 +231,45 @@ async function prependComputeBudgetAndPlatformFee(
   const budgetIxs = buildComputeBudgetInstructions(METEORA_POOL_TX_COMPUTE_UNITS, micro);
   const prefix = [...budgetIxs, ...(feeIx ? [feeIx] : [])];
   tx.instructions = [...prefix, ...tx.instructions];
+}
+
+/**
+ * The position NFT keypair makes pool txs 2-signer and too big for Phantom to add its guard instructions, so the
+ * setup (ATAs, SOL wrap) goes first as a user-only tx and the pool ix (+ our fee) follows in a smaller one.
+ * The fee is only paid with the pool ix. Both go through the adapter (simulation, wallet signs first).
+ */
+async function sendSplitPositionTransaction(params: {
+  connection: Connection;
+  wallet: WalletContextState;
+  tx: Transaction;
+  feeIx: ReturnType<typeof buildFeeTransferInstruction>;
+  signers: Keypair[];
+  latest: { blockhash: string; lastValidBlockHeight: number };
+}): Promise<{ signature: string; latest: { blockhash: string; lastValidBlockHeight: number } }> {
+  const { connection, wallet, tx, feeIx, signers } = params;
+  const owner = wallet.publicKey!;
+  const sendOpts = { skipPreflight: true, maxRetries: 3 };
+  const isBudget = (ix: TransactionInstruction) => ix.programId.equals(ComputeBudgetProgram.programId);
+  const poolIdx = tx.instructions.findIndex((ix) => ix.programId.equals(CP_AMM_PROGRAM_ID));
+  const budget = tx.instructions.filter(isBudget);
+  const setup = tx.instructions.slice(0, Math.max(poolIdx, 0)).filter((ix) => !isBudget(ix) && ix !== feeIx);
+  if (poolIdx < 0 || setup.length === 0) {
+    return { signature: await wallet.sendTransaction(tx, connection, { ...sendOpts, signers }), latest: params.latest };
+  }
+
+  const setupTx = new Transaction({ feePayer: owner, ...params.latest }).add(...budget, ...setup);
+  const setupSig = await wallet.sendTransaction(setupTx, connection, sendOpts);
+  await confirmTransactionResilient(connection, { signature: setupSig, ...params.latest }, 'confirmed');
+  const { value } = await connection.getSignatureStatuses([setupSig], { searchTransactionHistory: true });
+  if (value[0]?.err != null) throw new Error(`Pool setup transaction failed: ${JSON.stringify(value[0].err)}`);
+
+  const latest = await connection.getLatestBlockhash('confirmed');
+  const poolTx = new Transaction({ feePayer: owner, ...latest }).add(
+    ...budget,
+    ...(feeIx ? [feeIx] : []),
+    ...tx.instructions.slice(poolIdx),
+  );
+  return { signature: await wallet.sendTransaction(poolTx, connection, { ...sendOpts, signers }), latest };
 }
 
 /**
@@ -563,15 +605,18 @@ async function addLiquidityNewPositionExistingPool(params: {
     tx.recentBlockhash = latest.blockhash;
 
 
-    const txSignature = await params.wallet.sendTransaction(tx, params.connection, {
+    const { signature: txSignature, latest: sentWith } = await sendSplitPositionTransaction({
+      connection: params.connection,
+      wallet: params.wallet,
+      tx,
+      feeIx,
       signers: [positionNft],
-      skipPreflight: true,
-      maxRetries: 3,
+      latest,
     });
 
     await confirmTransactionWithBackgroundFallback(
       params.connection,
-      { signature: txSignature, blockhash: latest.blockhash, lastValidBlockHeight: latest.lastValidBlockHeight },
+      { signature: txSignature, ...sentWith },
       'confirmed',
     );
 
@@ -759,15 +804,18 @@ export async function createDammV2Pool(params: {
     tx.recentBlockhash = latest.blockhash;
 
 
-    const txSignature = await params.wallet.sendTransaction(tx, params.connection, {
+    const { signature: txSignature, latest: sentWith } = await sendSplitPositionTransaction({
+      connection: params.connection,
+      wallet: params.wallet,
+      tx,
+      feeIx,
       signers: [positionNft],
-      skipPreflight: true,
-      maxRetries: 3,
+      latest,
     });
 
     await confirmTransactionWithBackgroundFallback(
       params.connection,
-      { signature: txSignature, blockhash: latest.blockhash, lastValidBlockHeight: latest.lastValidBlockHeight },
+      { signature: txSignature, ...sentWith },
       'confirmed',
     );
 
