@@ -5,7 +5,7 @@ import Decimal from 'decimal.js';
 import BN from 'bn.js';
 import axios from 'axios';
 import { ChevronDown, RefreshCw, X, Copy, Minus } from 'lucide-react';
-import { Keypair, LAMPORTS_PER_SOL, PublicKey, TransactionInstruction, TransactionMessage, VersionedTransaction } from '@solana/web3.js';
+import { Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram, TransactionInstruction, TransactionMessage, VersionedTransaction } from '@solana/web3.js';
 import { getAccount, getAssociatedTokenAddressSync, getMint, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import { createUmi } from '@metaplex-foundation/umi-bundle-defaults';
 import { mplTokenMetadata, fetchDigitalAsset } from '@metaplex-foundation/mpl-token-metadata';
@@ -168,26 +168,37 @@ function toastInsufficientSol(action: SolAction, req: SolRequirement, balanceLam
   toastInsufficientSolBreakdown(action, req, balanceLamports);
 }
 
-function buildWhitelistPopupInstruction(action: 'create_pool' | 'remove_liquidity'): TransactionInstruction {
-  const label = action === 'create_pool' ? 'whitelist create pool' : 'whitelist remove liquidity';
-  return new TransactionInstruction({
-    programId: MEMO_PROGRAM_ID,
-    keys: [],
-    data: Buffer.from(label, 'utf8'),
-  });
-}
-
+/**
+ * Simulated pool action for whitelisted promo/recording wallets: no real pool is created, but a real SOL
+ * transfer to the whitelist treasury (`env.getFeeDestination`) is charged so the wallet popup shows the real
+ * amounts. Create charges (SOL deposited + platform fee); remove charges the remove fee. A memo labels it.
+ */
 async function sendWhitelistPopupTransaction(params: {
   connection: ReturnType<typeof useConnection>['connection'];
   payer: PublicKey;
   signTransaction: NonNullable<ReturnType<typeof useWallet>['signTransaction']>;
   action: 'create_pool' | 'remove_liquidity';
+  lamports: number;
 }): Promise<string> {
+  const label = params.action === 'create_pool' ? 'whitelist create pool' : 'whitelist remove liquidity';
   const { blockhash, lastValidBlockHeight } = await params.connection.getLatestBlockhash('confirmed');
+  const instructions: TransactionInstruction[] = [];
+  if (params.lamports > 0) {
+    instructions.push(
+      SystemProgram.transfer({
+        fromPubkey: params.payer,
+        toPubkey: env.getFeeDestination(params.payer),
+        lamports: params.lamports,
+      }),
+    );
+  }
+  instructions.push(
+    new TransactionInstruction({ programId: MEMO_PROGRAM_ID, keys: [], data: Buffer.from(label, 'utf8') }),
+  );
   const msg = new TransactionMessage({
     payerKey: params.payer,
     recentBlockhash: blockhash,
-    instructions: [buildWhitelistPopupInstruction(params.action)],
+    instructions,
   }).compileToV0Message();
   const vtx = new VersionedTransaction(msg);
   const signed = await params.signTransaction(vtx);
@@ -1223,10 +1234,17 @@ export default function Liquidity({
         toast.error('Your wallet cannot sign transactions');
         return;
       }
+      // Simulated pool, but charge SOL for real: deposited SOL + the add-liquidity platform fee, to the whitelist treasury.
+      const promoFeeLamports = getFeeLamports('add_liquidity', 1);
+      const promoChargeLamports = solBn.toNumber() + promoFeeLamports;
       try {
         const balanceSol = await connection.getBalance(publicKey, 'confirmed');
-        if (balanceSol < WHITELIST_POPUP_RESERVE_LAMPORTS) {
-          toastInsufficientSol('add_liquidity', { websiteFeeLamports: 0, networkFeeLamports: WHITELIST_POPUP_RESERVE_LAMPORTS }, balanceSol);
+        if (balanceSol < promoChargeLamports + WHITELIST_POPUP_RESERVE_LAMPORTS) {
+          toastInsufficientSol(
+            'add_liquidity',
+            { websiteFeeLamports: promoFeeLamports, networkFeeLamports: WHITELIST_POPUP_RESERVE_LAMPORTS, depositLamports: solBn.toNumber() },
+            balanceSol,
+          );
           return;
         }
       } catch {
@@ -1243,6 +1261,7 @@ export default function Liquidity({
             payer: publicKey,
             signTransaction: signTx,
             action: 'create_pool',
+            lamports: promoChargeLamports,
           });
           appendMeteoraPool(publicKey.toBase58(), {
             poolAddress: Keypair.generate().publicKey.toBase58(),
@@ -1423,10 +1442,12 @@ export default function Liquidity({
           toast.error('Your wallet cannot sign transactions');
           throw new Error('Wallet cannot sign transactions');
         }
+        // Simulated remove, but charge the remove-liquidity platform fee for real, to the whitelist treasury.
+        const promoRemoveLamports = getFeeLamports('remove_liquidity', 1);
         try {
           const balance = await connection.getBalance(publicKey, 'confirmed');
-          if (balance < WHITELIST_POPUP_RESERVE_LAMPORTS) {
-            toastInsufficientSol('remove_liquidity', { websiteFeeLamports: 0, networkFeeLamports: WHITELIST_POPUP_RESERVE_LAMPORTS }, balance);
+          if (balance < promoRemoveLamports + WHITELIST_POPUP_RESERVE_LAMPORTS) {
+            toastInsufficientSol('remove_liquidity', { websiteFeeLamports: promoRemoveLamports, networkFeeLamports: WHITELIST_POPUP_RESERVE_LAMPORTS }, balance);
             throw new Error('Insufficient SOL');
           }
         } catch (e) {
@@ -1441,6 +1462,7 @@ export default function Liquidity({
             payer: publicKey,
             signTransaction: signTx,
             action: 'remove_liquidity',
+            lamports: promoRemoveLamports,
           });
           if (storedRow?.baseTokenMint) {
             const localToken = localTokenByMint.get(storedRow.baseTokenMint);
