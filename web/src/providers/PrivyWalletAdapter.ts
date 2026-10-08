@@ -50,6 +50,8 @@ export class PrivyWalletAdapter extends BaseSignerWalletAdapter {
   private _connecting = false;
   private _state: PrivyBridgeState | null = null;
   private _waiters: Array<(s: PrivyBridgeState) => void> = [];
+  /** Set by Disconnect so a session that is still logging out is not re-attached. Cleared by Connect. */
+  private _userDisconnected = false;
 
   get publicKey() {
     return this._publicKey;
@@ -71,7 +73,18 @@ export class PrivyWalletAdapter extends BaseSignerWalletAdapter {
     } else if (this._publicKey && s.address && s.address !== this._publicKey.toBase58()) {
       this._publicKey = new PublicKey(s.address);
       this.emit('connect', this._publicKey);
+    } else if (!this._publicKey && !this._pending && !this._userDisconnected && s.ready && s.authenticated && s.address) {
+      // Session (or its wallet) came back after a reload or a wallet hiccup: re-attach silently, no modal.
+      this.attach(s.address);
     }
+  }
+
+  /**
+   * Re-announce the current connection. wallet-adapter drops events fired while no wallet is selected, and
+   * re-selecting does not read publicKey back, so the UI could stay on "Connect Wallet" while we are connected.
+   */
+  resync() {
+    if (this._publicKey) this.emit('connect', this._publicKey);
   }
 
   private next(): Promise<PrivyBridgeState> {
@@ -113,7 +126,8 @@ export class PrivyWalletAdapter extends BaseSignerWalletAdapter {
 
   /** Only ever called from the Connect button. A click while a login is pending re-opens the modal. */
   async connect(): Promise<void> {
-    if (this._publicKey) return;
+    this._userDisconnected = false;
+    if (this._publicKey) return this.resync();
     if (this._pending) {
       this._state?.login();
       return this._pending;
@@ -126,6 +140,7 @@ export class PrivyWalletAdapter extends BaseSignerWalletAdapter {
         // authenticated. Log out so the modal can open again (this used to need clearing localStorage).
         await s.logout().catch(() => {});
         s = await this.waitFor((x) => !x.authenticated, 5_000);
+        if (s.authenticated) throw new WalletConnectionError('Session reset failed, try again');
       }
       if (!(s.authenticated && s.address)) {
         const cancelsBefore = s.cancelCount;
@@ -148,6 +163,7 @@ export class PrivyWalletAdapter extends BaseSignerWalletAdapter {
   }
 
   async disconnect(): Promise<void> {
+    this._userDisconnected = true;
     const had = !!this._publicKey;
     this._publicKey = null;
     await this._state?.logout().catch(() => {});
