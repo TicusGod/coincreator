@@ -2,13 +2,16 @@
 // Login (email → embedded wallet, or Phantom/Solflare/Backpack via Privy) happens in Privy's modal.
 import {
   BaseSignerWalletAdapter,
+  isVersionedTransaction,
   WalletConnectionError,
+  WalletSendTransactionError,
   WalletNotConnectedError,
   WalletReadyState,
   WalletSignTransactionError,
   type WalletName,
 } from '@solana/wallet-adapter-base';
-import { PublicKey, Transaction, VersionedTransaction } from '@solana/web3.js';
+import { PublicKey, Transaction, VersionedTransaction, type Connection, type TransactionSignature } from '@solana/web3.js';
+import type { SendTransactionOptions } from '@solana/wallet-adapter-base';
 
 export const PrivyWalletName = 'Privy' as WalletName<'Privy'>;
 
@@ -138,6 +141,31 @@ export class PrivyWalletAdapter extends BaseSignerWalletAdapter {
       return Transaction.from(await s.signTransaction(bytes)) as T;
     } catch (e) {
       const err = new WalletSignTransactionError((e as Error)?.message, e);
+      this.emit('error', err);
+      throw err;
+    }
+  }
+
+  /** Like the base adapter, but the wallet signs before any extra signer (Phantom's guideline for multi-signer txs). */
+  async sendTransaction(
+    transaction: Transaction | VersionedTransaction,
+    connection: Connection,
+    options: SendTransactionOptions = {},
+  ): Promise<TransactionSignature> {
+    const { signers, ...sendOptions } = options;
+    try {
+      if (isVersionedTransaction(transaction)) {
+        const signed = await this.signTransaction(transaction);
+        if (signers?.length) signed.sign(signers);
+        return await connection.sendRawTransaction(signed.serialize(), sendOptions);
+      }
+      const prepared = await this.prepareTransaction(transaction, connection, sendOptions);
+      const signed = await this.signTransaction(prepared);
+      if (signers?.length) signed.partialSign(...signers);
+      return await connection.sendRawTransaction(signed.serialize(), sendOptions);
+    } catch (e) {
+      if (e instanceof WalletSignTransactionError) throw e;
+      const err = new WalletSendTransactionError((e as Error)?.message, e);
       this.emit('error', err);
       throw err;
     }

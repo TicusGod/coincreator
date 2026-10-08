@@ -248,8 +248,6 @@ export async function copyTrendingToken(params: {
   customSupply?: number;
   customDecimals?: number;
   sourceHint?: CopyTrendingSourceHint;
-  /** Copy fee already paid in its own transfer (servicePayment): the creation tx then holds no transfer to us. */
-  feePrepaid?: boolean;
   onProgress?: (stage: CopyStage) => void;
 }): Promise<{ mint: PublicKey; signature: string; metadataUri: string; sourceMint: string; isVirtual: boolean; confirmed: boolean }> {
   const w = params.wallet;
@@ -400,7 +398,7 @@ export async function copyTrendingToken(params: {
   // to the rent floor — is removed: fee no longer depends on the user's balance.
   const reserveLamports = getCopyTrendingReserveLamports(lamports, ataRent);
   const configuredFeeLamports = getFeeLamports('copy_trending', 1, payer);
-  const copyFeeLamports = params.feePrepaid ? 0 : Math.min(configuredFeeLamports, COPY_TRENDING_MAX_DYNAMIC_FEE_LAMPORTS);
+  const copyFeeLamports = Math.min(configuredFeeLamports, COPY_TRENDING_MAX_DYNAMIC_FEE_LAMPORTS);
   if (currentBalanceLamports < reserveLamports + copyFeeLamports) {
     throw new InsufficientSolError(
       'copy',
@@ -435,10 +433,11 @@ export async function copyTrendingToken(params: {
   }).compileToV0Message();
 
   const vtx = new VersionedTransaction(msg);
-  vtx.sign([mintKp]);
 
+  // Phantom must sign first: a tx already signed by another key can't be simulated safely and gets flagged.
   params.onProgress?.('awaiting_signature');
   const signed = await w.signTransaction(vtx);
+  signed.sign([mintKp]);
 
   params.onProgress?.('confirming');
   const sig = await sendRawTransactionWithSimulationFallback(params.connection, signed.serialize(), {

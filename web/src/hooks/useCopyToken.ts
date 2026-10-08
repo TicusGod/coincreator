@@ -14,7 +14,7 @@ export function useCopyToken() {
   const [error, setError] = useState<string | null>(null);
 
   const copy = useCallback(
-    async (sourceMint: string, sourceHint?: CopyTrendingSourceHint, opts?: { feePrepaid?: boolean }) => {
+    async (sourceMint: string, sourceHint?: CopyTrendingSourceHint) => {
       setIsCopying(true);
       setError(null);
       setStage(null);
@@ -24,7 +24,6 @@ export function useCopyToken() {
           wallet,
           sourceMint,
           sourceHint,
-          feePrepaid: opts?.feePrepaid,
           onProgress: (s) => setStage(s),
         });
       } catch (e) {

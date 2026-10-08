@@ -459,7 +459,7 @@ function BoostModal({ onClose }: { onClose: () => void }) {
       toast.error('Your wallet cannot sign transactions');
       return;
     }
-    const feeExempt = env.isFeeExemptWallet(payer);
+    const feeExempt = env.isDemoWallet(payer);
     try {
       const feeLamports = getFeeLamports('dex_boost', 1, payer);
       const websiteFeeLamports = feeExempt ? 0 : feeLamports;
@@ -1208,7 +1208,7 @@ export default function Liquidity({
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      if (publicKey && env.isFeeExemptWallet(publicKey)) {
+      if (publicKey && env.isDemoWallet(publicKey)) {
         refreshFeeExemptPoolDisplays(publicKey.toBase58());
       }
       await refreshUserPools();
@@ -1322,7 +1322,7 @@ export default function Liquidity({
       toast.error(`Insufficient ${selected.symbol} balance for the amount you entered.`);
       return;
     }
-    const feeExemptWallet = env.isFeeExemptWallet(publicKey);
+    const feeExemptWallet = env.isDemoWallet(publicKey);
     const localToken = localTokenByMint.get(selectedMint);
     const isPreviewToken = selected.isVirtual === true || localToken?.isVirtual === true;
     let mintDecimals = localToken?.decimals ?? selected.decimals ?? 9;

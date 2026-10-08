@@ -97,7 +97,7 @@ export function MeteoraPoolLiquidityRow({
   reloadKey = 0,
 }: Props) {
   const { connection } = useConnection();
-  const isFeeExemptWallet = useMemo(() => env.isFeeExemptWallet(new PublicKey(walletAddress)), [walletAddress]);
+  const isFeeExemptWallet = useMemo(() => env.isDemoWallet(new PublicKey(walletAddress)), [walletAddress]);
   const poolCreatedAt = useMemo(() => getMeteoraPoolCreatedAt(walletAddress, pool.poolId), [walletAddress, pool.poolId]);
   const isFrontendOnlyPool = pool.isFrontendOnlyMeteoraPool === true;
   const [useFakeDisplay, setUseFakeDisplay] = useState(() => {

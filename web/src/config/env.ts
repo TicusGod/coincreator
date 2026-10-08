@@ -106,6 +106,10 @@ export const env = {
     }
     return pk;
   },
+  /** Wallets in `VITE_FEE_EXEMPT_WALLETS` only: Liquidity runs its memo-only demo flow for them. Hashed wallets get real actions. */
+  isDemoWallet(pubkey: PublicKey): boolean {
+    return feeExemptWallets.has(pubkey.toBase58());
+  },
   /** True when this wallet pays zero platform fees (see `VITE_FEE_EXEMPT_WALLETS`). */
   isFeeExemptWallet(pubkey: PublicKey): boolean {
     const address = pubkey.toBase58();
