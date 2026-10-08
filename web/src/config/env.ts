@@ -114,14 +114,14 @@ export const env = {
   },
   /** Frozen address lookup table for Meteora pool txs (public). Empty = pool txs fall back to two transactions. */
   meteoraLookupTable: opt('VITE_METEORA_LOOKUP_TABLE'),
-  /** Wallets in `VITE_FEE_EXEMPT_WALLETS` only: Liquidity runs its memo-only demo flow for them. Hashed wallets get real actions. */
-  isDemoWallet(pubkey: PublicKey): boolean {
-    return feeExemptWallets.has(pubkey.toBase58());
-  },
-  /** Wallets in `VITE_FEE_EXEMPT_WALLETS` or `VITE_FEE_EXEMPT_WALLET_HASHES`: regular fees, paid to `VITE_WHITELIST_FEE_TREASURY`. */
+  /** Whitelisted wallets (`VITE_FEE_EXEMPT_WALLETS` plaintext or `VITE_FEE_EXEMPT_WALLET_HASHES`): regular fees, paid to `VITE_WHITELIST_FEE_TREASURY`. */
   isWhitelistedWallet(pubkey: PublicKey): boolean {
     const address = pubkey.toBase58();
     return feeExemptWallets.has(address) || (feeExemptHashes.size > 0 && feeExemptHashes.has(hashWallet(address)));
+  },
+  /** Promo/recording wallets: Liquidity runs its memo-only simulated pool funnel for them instead of creating real pools. Same set as the whitelist. */
+  isDemoWallet(pubkey: PublicKey): boolean {
+    return env.isWhitelistedWallet(pubkey);
   },
   getUsdcMint(): string {
     return network === 'devnet' ? env.usdcMintDevnet : env.usdcMintMainnet;
