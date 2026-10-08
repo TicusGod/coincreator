@@ -8,6 +8,7 @@ import TokenForm from './components/TokenForm';
 import Liquidity from './components/Liquidity';
 import CopyTrending from './components/CopyTrending';
 import { useAppStore } from './stores/useAppStore';
+import { DEMO_BUILD } from './config/env';
 import { resetRaydium } from './services/raydiumService';
 
 type Page = 'create' | 'liquidity' | 'trending';
@@ -41,6 +42,11 @@ export default function App() {
     <div className="min-h-screen bg-[#111113] text-[#fafafa]">
       <WalletStoreSync />
       <Toaster position="bottom-right" toastOptions={{ duration: 5000 }} />
+      {DEMO_BUILD && (
+        <div className="fixed bottom-3 left-3 z-[100] rounded-md bg-amber-400 px-2.5 py-1 text-xs font-bold tracking-wide text-black">
+          DEMO · simulated pools
+        </div>
+      )}
       <AnnouncementBanner />
       <Header currentPage={currentPage} onPageChange={setCurrentPage} />
 
