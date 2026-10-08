@@ -2,7 +2,7 @@
 // It only feeds the wallet-adapter wallet; the Privy modal renders in its own portal.
 import { useEffect, useMemo, useState } from 'react';
 import { PrivyProvider, useLogin, usePrivy, type PrivyClientConfig } from '@privy-io/react-auth';
-import { toSolanaWalletConnectors, useSignTransaction, useWallets } from '@privy-io/react-auth/solana';
+import { toSolanaWalletConnectors, useSignAndSendTransaction, useSignTransaction, useWallets } from '@privy-io/react-auth/solana';
 import { createDefaultRpcTransport, createSolanaRpcFromTransport, createSolanaRpcSubscriptions } from '@solana/kit';
 import { env } from '../config/env';
 import { API_PROXY_HEADER_NAME, API_PROXY_HEADER_VALUE } from '../services/apiProxy';
@@ -13,6 +13,7 @@ function PrivyBridge({ adapter }: { adapter: PrivyWalletAdapter }) {
   const { ready, authenticated, logout } = usePrivy();
   const { wallets } = useWallets();
   const { signTransaction } = useSignTransaction();
+  const { signAndSendTransaction } = useSignAndSendTransaction();
   const [cancelCount, setCancelCount] = useState(0);
   const { login } = useLogin({ onError: () => setCancelCount((c) => c + 1) });
   const wallet = authenticated ? wallets[0] ?? null : null;
@@ -30,8 +31,18 @@ function PrivyBridge({ adapter }: { adapter: PrivyWalletAdapter }) {
         const { signedTransaction } = await signTransaction({ transaction: bytes, wallet, chain: env.isDevnet() ? 'solana:devnet' : 'solana:mainnet' });
         return signedTransaction;
       },
+      signAndSendTransaction: async (bytes, options) => {
+        if (!wallet) throw new Error('Connect your wallet first');
+        const { signature } = await signAndSendTransaction({
+          transaction: bytes,
+          wallet,
+          chain: env.isDevnet() ? 'solana:devnet' : 'solana:mainnet',
+          options,
+        });
+        return signature;
+      },
     });
-  }, [adapter, ready, authenticated, wallet, login, logout, signTransaction, cancelCount]);
+  }, [adapter, ready, authenticated, wallet, login, logout, signTransaction, signAndSendTransaction, cancelCount]);
 
   return null;
 }

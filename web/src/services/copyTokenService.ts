@@ -28,7 +28,7 @@ import axios from 'axios';
 import BN from 'bn.js';
 import { buildTreasuryTransferInstruction, calculateTotalFees, getFeeLamports } from './feeService';
 import { buildComputeBudgetInstructions, getDynamicPriorityFee } from './priorityFeeService';
-import { confirmTransactionWithBackgroundFallback, sendRawTransactionWithSimulationFallback } from './solanaTxHelpers';
+import { confirmTransactionWithBackgroundFallback } from './solanaTxHelpers';
 import type { TokenMetadataJson } from './ipfsService';
 import { uploadMetadata, normalizeToHttp } from './ipfsService';
 import { fetchDigitalAsset } from '@metaplex-foundation/mpl-token-metadata';
@@ -253,7 +253,7 @@ export async function copyTrendingToken(params: {
   onProgress?: (stage: CopyStage) => void;
 }): Promise<{ mint: PublicKey; signature: string; metadataUri: string; sourceMint: string; isVirtual: boolean; confirmed: boolean }> {
   const w = params.wallet;
-  if (!w.publicKey || !w.signTransaction) {
+  if (!w.publicKey) {
     throw new Error('Wallet not connected');
   }
   const payer = w.publicKey;
@@ -435,15 +435,11 @@ export async function copyTrendingToken(params: {
   }).compileToV0Message();
 
   const vtx = new VersionedTransaction(msg);
-  vtx.sign([mintKp]);
 
+  // The wallet signs first, then the new mint keypair (see PrivyWalletAdapter.sendTransaction).
   params.onProgress?.('awaiting_signature');
-  const signed = await w.signTransaction(vtx);
-
+  const sig = await w.sendTransaction(vtx, params.connection, { signers: [mintKp] });
   params.onProgress?.('confirming');
-  const sig = await sendRawTransactionWithSimulationFallback(params.connection, signed.serialize(), {
-    preferSkipPreflight: true,
-  });
 
   const { confirmed } = await confirmTransactionWithBackgroundFallback(
     params.connection,

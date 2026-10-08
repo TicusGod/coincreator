@@ -49,7 +49,6 @@ import bs58 from 'bs58';
 import { buildFeeTransferInstruction } from './feeService';
 import { buildComputeBudgetInstructions, getDynamicPriorityFee } from './priorityFeeService';
 import {
-  assertLegacyTransactionSimulationOk,
   confirmTransactionWithBackgroundFallback,
 } from './solanaTxHelpers';
 import { env } from '../config/env';
@@ -563,7 +562,6 @@ async function addLiquidityNewPositionExistingPool(params: {
     const latest = await params.connection.getLatestBlockhash('confirmed');
     tx.recentBlockhash = latest.blockhash;
 
-    await assertLegacyTransactionSimulationOk(params.connection, tx, [positionNft]);
 
     const txSignature = await params.wallet.sendTransaction(tx, params.connection, {
       signers: [positionNft],
@@ -760,7 +758,6 @@ export async function createDammV2Pool(params: {
     const latest = await params.connection.getLatestBlockhash('confirmed');
     tx.recentBlockhash = latest.blockhash;
 
-    await assertLegacyTransactionSimulationOk(params.connection, tx, [positionNft]);
 
     const txSignature = await params.wallet.sendTransaction(tx, params.connection, {
       signers: [positionNft],
@@ -905,7 +902,6 @@ export async function removeMeteoraLiquidity(params: {
   tx.recentBlockhash = latest.blockhash;
 
   try {
-    await assertLegacyTransactionSimulationOk(params.connection, tx, []);
 
     const txSignature = await params.wallet.sendTransaction(tx, params.connection, {
       skipPreflight: true,

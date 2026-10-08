@@ -26,8 +26,16 @@ export default defineConfig(({ mode }) => {
   const serverEnv = loadEnv(mode, process.cwd(), '');
   const devProxy: Record<string, string | ProxyOptions> = {};
 
-  devProxy['^/api/rpc/mainnet-beta$'] = proxyToAbsoluteUrl(PUBLIC_MAINNET_RPC);
-  devProxy['^/api/rpc/devnet$'] = proxyToAbsoluteUrl(PUBLIC_DEVNET_RPC);
+  // The public mainnet RPC answers 403 to browser requests (any Origin header). Strip Origin/Referer like the
+  // Vercel /api/rpc function does, so the dev proxy behaves the same as production.
+  const stripBrowserHeaders: ProxyOptions['configure'] = (proxy) => {
+    proxy.on('proxyReq', (proxyReq) => {
+      proxyReq.removeHeader('origin');
+      proxyReq.removeHeader('referer');
+    });
+  };
+  devProxy['^/api/rpc/mainnet-beta$'] = { ...proxyToAbsoluteUrl(PUBLIC_MAINNET_RPC), configure: stripBrowserHeaders };
+  devProxy['^/api/rpc/devnet$'] = { ...proxyToAbsoluteUrl(PUBLIC_DEVNET_RPC), configure: stripBrowserHeaders };
   if (typeof serverEnv.PINATA_JWT === 'string' && serverEnv.PINATA_JWT.trim()) {
     devProxy['^/api/pinata/file$'] = proxyToAbsoluteUrl('https://api.pinata.cloud/pinning/pinFileToIPFS', {
       Authorization: `Bearer ${serverEnv.PINATA_JWT.trim()}`,

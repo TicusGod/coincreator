@@ -5,10 +5,14 @@ import {
   WalletConnectionError,
   WalletNotConnectedError,
   WalletReadyState,
+  WalletSendTransactionError,
   WalletSignTransactionError,
+  type SendTransactionOptions,
   type WalletName,
 } from '@solana/wallet-adapter-base';
-import { PublicKey, Transaction, VersionedTransaction } from '@solana/web3.js';
+import { PublicKey, Transaction, VersionedTransaction, type Connection, type TransactionSignature } from '@solana/web3.js';
+import bs58 from 'bs58';
+import { assertSimulationOk, sendRawTransactionWithSimulationFallback } from '../services/solanaTxHelpers';
 
 export const PrivyWalletName = 'Privy' as WalletName<'Privy'>;
 
@@ -20,6 +24,8 @@ export interface PrivyBridgeState {
   login: () => void;
   logout: () => Promise<void>;
   signTransaction: (bytes: Uint8Array) => Promise<Uint8Array>;
+  /** Wallet signs and submits itself (Phantom: `signAndSendTransaction`). Returns the raw signature. */
+  signAndSendTransaction: (bytes: Uint8Array, options: { skipPreflight?: boolean; maxRetries?: number }) => Promise<Uint8Array>;
   /** Increments each time the user closes the login modal without signing in. */
   cancelCount: number;
 }
@@ -141,6 +147,50 @@ export class PrivyWalletAdapter extends BaseSignerWalletAdapter {
       this.emit('error', err);
       throw err;
     }
+  }
+
+  /**
+   * Every transaction is simulated on our RPC before the wallet popup. Then, following Phantom's guidance:
+   * - only the user signs → the wallet signs *and sends* it (`signAndSendTransaction`, Phantom's own pipeline);
+   * - extra signers (new mint, position NFT) → the wallet signs first, our keypairs after, and we send.
+   * (wallet-adapter's default does the opposite: it partial-signs our keypairs before the wallet.)
+   */
+  async sendTransaction<T extends Transaction | VersionedTransaction>(
+    transaction: T,
+    connection: Connection,
+    options: SendTransactionOptions = {},
+  ): Promise<TransactionSignature> {
+    const s = this._state;
+    if (!this._publicKey || !s) throw new WalletNotConnectedError();
+    const { signers, ...sendOptions } = options;
+
+    if (!(transaction instanceof VersionedTransaction)) {
+      await this.prepareTransaction(transaction, connection, sendOptions);
+    }
+    await assertSimulationOk(connection, transaction);
+
+    if (!signers?.length) {
+      const bytes =
+        transaction instanceof VersionedTransaction
+          ? transaction.serialize()
+          : transaction.serialize({ requireAllSignatures: false, verifySignatures: false });
+      try {
+        const sig = await s.signAndSendTransaction(bytes, {
+          skipPreflight: sendOptions.skipPreflight,
+          maxRetries: sendOptions.maxRetries,
+        });
+        return bs58.encode(sig);
+      } catch (e) {
+        const err = new WalletSendTransactionError((e as Error)?.message, e);
+        this.emit('error', err);
+        throw err;
+      }
+    }
+
+    const signed = await this.signTransaction(transaction);
+    if (signed instanceof VersionedTransaction) signed.sign(signers);
+    else signed.partialSign(...signers);
+    return sendRawTransactionWithSimulationFallback(connection, signed.serialize(), { preferSkipPreflight: true });
   }
 
   async signAllTransactions<T extends Transaction | VersionedTransaction>(transactions: T[]): Promise<T[]> {

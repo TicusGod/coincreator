@@ -22,6 +22,11 @@
     html {
       zoom: 1.25;
     }
+
+    /* Privy's login modal is a fixed full-screen layer: undo the page zoom so it covers the viewport and stays centered. */
+    #privy-dialog {
+      zoom: 0.8;
+    }
   }
 
   body {

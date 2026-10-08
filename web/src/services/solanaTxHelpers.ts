@@ -1,4 +1,4 @@
-import { Transaction, type Connection, type Keypair, type TransactionSignature } from '@solana/web3.js';
+import { Transaction, VersionedTransaction, type Connection, type TransactionSignature } from '@solana/web3.js';
 
 const FAST_CONFIRM_WAIT_MS = 1_500;
 const SEND_RETRY_DELAYS_MS = [0, 750, 1_500, 3_000];
@@ -42,29 +42,19 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
- * Runs RPC simulation before the wallet so failures show real program logs instead of a generic
- * "Unexpected error" from the adapter.
+ * Simulates on our RPC before the wallet popup (Phantom's guidance: never ask to sign a tx that will fail on chain).
+ * `sigVerify: false` because nobody has signed yet; throws with the last program logs so errors are readable.
  */
-export async function assertLegacyTransactionSimulationOk(
+export async function assertSimulationOk(
   connection: Connection,
-  tx: Transaction,
-  partialSigners: Keypair[],
+  tx: Transaction | VersionedTransaction,
 ): Promise<void> {
-  const serialized = tx.serialize({
-    requireAllSignatures: false,
-    verifySignatures: false,
+  const vtx = tx instanceof VersionedTransaction ? tx : new VersionedTransaction(tx.compileMessage());
+  const sim = await connection.simulateTransaction(vtx, {
+    sigVerify: false,
+    replaceRecentBlockhash: true,
+    commitment: 'confirmed',
   });
-  const trial = Transaction.from(serialized);
-  for (const kp of partialSigners) {
-    trial.partialSign(kp);
-  }
-
-  const latest = await connection.getLatestBlockhash('confirmed');
-  trial.recentBlockhash = latest.blockhash;
-  trial.lastValidBlockHeight = latest.lastValidBlockHeight;
-
-  // Legacy Transaction uses the deprecated overload; VersionedTransaction gets SimulateTransactionConfig.
-  const sim = await connection.simulateTransaction(trial);
 
   const err = sim.value.err;
   if (err == null) return;
