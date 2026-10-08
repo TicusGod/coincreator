@@ -41,7 +41,7 @@ export default function Header({ currentPage, onPageChange }: HeaderProps) {
           <span className="w-11 h-11 rounded-[10px] overflow-hidden shrink-0 flex items-center justify-center">
             <img src="/logo.svg" alt="" className="w-full h-full object-contain" width={44} height={44} />
           </span>
-          <span className="text-[#fafafa] text-base sm:text-lg font-bold tracking-tight whitespace-nowrap">
+          <span className="text-[#fafafa] text-lg sm:text-[22px] font-bold tracking-tight whitespace-nowrap">
             coin<span className="text-[#86efac]">creator</span>.fun
           </span>
         </button>

@@ -2,33 +2,87 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Launch Solana Coins</title>
+    <title>coincreator.fun - Launch Solana Coins</title>
     <meta
       name="description"
-      content="Mint Solana meme coins in-browser—wallet minting, token metadata, pools on Raydium & Meteora."
+      content="Create and launch your own Solana token in seconds, no coding required. Set name, symbol and image, revoke mint and freeze authority, and add liquidity on Raydium or Meteora, all from your wallet."
     />
+    <meta name="keywords" content="solana token creator, create solana token, launch meme coin, spl token generator, solana coin maker, revoke mint authority, raydium liquidity, meteora pool" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <link rel="canonical" href="https://coincreator.fun/" />
+    <meta name="theme-color" content="#111113" />
+    <meta name="application-name" content="coincreator.fun" />
+    <meta name="apple-mobile-web-app-title" content="coincreator.fun" />
+
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <!-- Link previews (Telegram, WhatsApp, Discord, X, Facebook, LinkedIn) -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Launch Solana Coins" />
-    <meta
-      property="og:description"
-      content="Mint Solana meme coins in-browser—wallet minting, token metadata, pools on Raydium & Meteora."
-    />
-    <!-- OG raster is generated from public/logo.svg at build time (scripts/rasterize-og.mjs); WhatsApp/Facebook expect PNG. -->
+    <meta property="og:site_name" content="coincreator.fun" />
+    <meta property="og:url" content="https://coincreator.fun/" />
+    <meta property="og:title" content="coincreator.fun - Launch Solana Coins" />
+    <meta property="og:description" content="Launch your own Solana coin in seconds. No coding: create, revoke authorities and add liquidity from your wallet." />
+    <meta property="og:image" content="https://coincreator.fun/og.png" />
+    <meta property="og:image:secure_url" content="https://coincreator.fun/og.png" />
     <meta property="og:image:type" content="image/png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="Launch Solana Coins" />
+    <meta property="og:image:alt" content="coincreator.fun - Launch your own Solana coin in seconds" />
+    <meta property="og:locale" content="en_US" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Launch Solana Coins" />
-    <meta
-      name="twitter:description"
-      content="Mint Solana meme coins in-browser—wallet minting, token metadata, pools on Raydium & Meteora."
-    />
+    <meta name="twitter:title" content="coincreator.fun - Launch Solana Coins" />
+    <meta name="twitter:description" content="Launch your own Solana coin in seconds. No coding: create, revoke authorities and add liquidity from your wallet." />
+    <meta name="twitter:image" content="https://coincreator.fun/og.png" />
+    <meta name="twitter:image:alt" content="coincreator.fun - Launch your own Solana coin in seconds" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "WebSite",
+            "@id": "https://coincreator.fun/#website",
+            "url": "https://coincreator.fun/",
+            "name": "coincreator.fun",
+            "description": "Create and launch Solana tokens in seconds, no coding required.",
+            "publisher": { "@id": "https://coincreator.fun/#organization" },
+            "inLanguage": "en"
+          },
+          {
+            "@type": "Organization",
+            "@id": "https://coincreator.fun/#organization",
+            "name": "coincreator.fun",
+            "legalName": "Crateno Marketing Online SL",
+            "url": "https://coincreator.fun/",
+            "logo": "https://coincreator.fun/icon-512.png",
+            "email": "support@coincreator.fun"
+          },
+          {
+            "@type": "WebApplication",
+            "name": "coincreator.fun",
+            "url": "https://coincreator.fun/",
+            "applicationCategory": "FinanceApplication",
+            "operatingSystem": "Web",
+            "description": "No-code Solana SPL token creator: set name, symbol and image, revoke mint, freeze and update authority, and add liquidity on Raydium or Meteora.",
+            "image": "https://coincreator.fun/og.png",
+            "publisher": { "@id": "https://coincreator.fun/#organization" }
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- Shown to crawlers and before the app loads; replaced by the app. -->
+      <main style="max-width:640px;margin:0 auto;padding:96px 16px;font-family:system-ui,sans-serif;color:#fafafa;background:#111113;text-align:center">
+        <h1 style="font-size:32px;margin:0 0 12px">Launch your own Solana coin</h1>
+        <p style="color:#a1a1aa;margin:0">Create a Solana token in seconds with no coding. Choose a name, symbol and image, revoke mint and freeze authority, and add liquidity on Raydium or Meteora, directly from your wallet.</p>
+      </main>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
