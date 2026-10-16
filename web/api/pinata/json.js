@@ -1,4 +1,5 @@
 import {
+  fetchWithUpstreamRetry,
   getServerPinataJwt,
   readRawBody,
   relayUpstreamResponse,
@@ -24,16 +25,16 @@ export default async function pinataJsonProxy(req, res) {
   // Only signed-in users can pin files to our Pinata account.
   const userId = await requirePrivyUser(req, res);
   if (!userId) return;
-  const perUser = takeRateLimit(req, 'pinata:json:user', { limit: 20, windowMs: 60_000, cost: 4, key: userId });
+  const perUser = takeRateLimit(req, 'pinata:json:user', { limit: 40, windowMs: 60_000, cost: 1, key: userId });
   if (!perUser.ok) {
     res.setHeader('Retry-After', String(perUser.retryAfterSeconds));
     return sendJson(res, 429, { error: 'rate_limited', retryAfter: perUser.retryAfterSeconds });
   }
 
   const limited = takeRateLimit(req, 'pinata:json', {
-    limit: 20,
+    limit: 60,
     windowMs: 60_000,
-    cost: 4,
+    cost: 1,
   });
   if (!limited.ok) {
     res.setHeader('Retry-After', String(limited.retryAfterSeconds));
@@ -65,7 +66,7 @@ export default async function pinataJsonProxy(req, res) {
   }
 
   try {
-    const upstream = await fetch('https://api.pinata.cloud/pinning/pinJSONToIPFS', {
+    const upstream = await fetchWithUpstreamRetry('https://api.pinata.cloud/pinning/pinJSONToIPFS', {
       method: 'POST',
       headers: {
         Accept: 'application/json',
@@ -74,7 +75,7 @@ export default async function pinataJsonProxy(req, res) {
       },
       body: rawBody,
       redirect: 'follow',
-    });
+    }, { retries: 2, label: 'pinata json' });
     return await relayUpstreamResponse(res, upstream);
   } catch {
     return sendJson(res, 502, { error: 'pinata_upstream_failed' });

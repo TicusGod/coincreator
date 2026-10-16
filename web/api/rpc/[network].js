@@ -1,4 +1,5 @@
 import {
+  fetchWithUpstreamRetry,
   getServerRpcUrl,
   readRawBody,
   relayUpstreamResponse,
@@ -179,6 +180,7 @@ export default async function rpcProxy(req, res) {
     cost: rateLimitCost(methods),
   });
   if (!limited.ok) {
+    console.warn(`[rpc] local rate limit hit (${methods.join(',')})`);
     res.setHeader('Retry-After', String(limited.retryAfterSeconds));
     return sendJson(res, 429, { error: 'rate_limited', retryAfter: limited.retryAfterSeconds });
   }
@@ -194,15 +196,19 @@ export default async function rpcProxy(req, res) {
   }
 
   try {
-    const upstream = await fetch(upstreamUrl, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
+    const upstream = await fetchWithUpstreamRetry(
+      upstreamUrl,
+      {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: rawBody,
+        redirect: 'follow',
       },
-      body: rawBody,
-      redirect: 'follow',
-    });
+      { retries: 3, label: `rpc ${methods.join(',')}` },
+    );
     return await relayUpstreamResponse(res, upstream);
   } catch {
     return sendJson(res, 502, { error: 'rpc_upstream_failed' });

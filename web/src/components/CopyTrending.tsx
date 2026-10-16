@@ -119,40 +119,9 @@ function TokenCard({
   copying: string | null;
 }) {
   const isCopying = copying === token.id;
-  const containerRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el || typeof window === 'undefined' || !('IntersectionObserver' in window)) return;
-    let scheduled: number | null = null;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) {
-            // Delay so a fast scroll past the card does not fire a Pinata upload.
-            if (scheduled === null) {
-              scheduled = window.setTimeout(() => {
-                onPrefetch(token);
-              }, 700);
-            }
-          } else if (scheduled !== null) {
-            window.clearTimeout(scheduled);
-            scheduled = null;
-          }
-        }
-      },
-      { rootMargin: '80px', threshold: 0.4 },
-    );
-    observer.observe(el);
-    return () => {
-      observer.disconnect();
-      if (scheduled !== null) window.clearTimeout(scheduled);
-    };
-  }, [onPrefetch, token]);
 
   return (
     <div
-      ref={containerRef}
       className="bg-[#18191b] rounded-[16px] p-5 flex flex-col gap-4 border border-[#212225] hover:border-[#272a2d] transition-all duration-150"
     >
       <div className="flex items-start justify-between gap-3">

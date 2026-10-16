@@ -310,6 +310,29 @@ export async function readRawBody(req, maxBytes = 1024 * 1024) {
   return Buffer.concat(chunks);
 }
 
+/**
+ * fetch() that retries when the upstream (RPC provider, Pinata) answers 429 or a transient 5xx.
+ * Short bursts from one copy/launch (5-6 parallel RPC calls) can briefly exceed the provider's
+ * per-second limit; waiting a few hundred ms is enough, so users never see the error.
+ */
+export async function fetchWithUpstreamRetry(url, init, { retries = 3, label = 'upstream' } = {}) {
+  let response;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    response = await fetch(url, init);
+    const retryable = response.status === 429 || response.status === 502 || response.status === 503 || response.status === 504;
+    if (!retryable || attempt === retries) break;
+    const retryAfter = Number(response.headers.get('retry-after'));
+    const waitMs = Number.isFinite(retryAfter) && retryAfter > 0
+      ? Math.min(retryAfter * 1000, 2_000)
+      : 250 * 2 ** attempt + Math.floor(Math.random() * 200);
+    console.warn(`[${label}] upstream ${response.status}, retry ${attempt + 1}/${retries} in ${waitMs}ms`);
+    await response.arrayBuffer().catch(() => {});
+    await new Promise((resolve) => setTimeout(resolve, waitMs));
+  }
+  if (response.status === 429) console.warn(`[${label}] upstream still rate limited after ${retries} retries`);
+  return response;
+}
+
 export async function relayUpstreamResponse(res, upstream) {
   const body = Buffer.from(await upstream.arrayBuffer());
   setNoStore(res);

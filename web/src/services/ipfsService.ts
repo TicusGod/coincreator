@@ -48,6 +48,23 @@ function loadImageDimensions(file: File): Promise<{ w: number; h: number }> {
   });
 }
 
+/** Retries an upload when the server says "slow down" (429) or a gateway hiccups (502/503/504). */
+async function postWithRetry<T>(send: () => Promise<{ data: T }>): Promise<{ data: T }> {
+  const delays = [600, 1_500, 3_000];
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await send();
+    } catch (e) {
+      const status = axios.isAxiosError(e) ? e.response?.status : undefined;
+      const retryable = status === 429 || status === 502 || status === 503 || status === 504;
+      if (!retryable || attempt >= delays.length) throw e;
+      const retryAfter = axios.isAxiosError(e) ? Number(e.response?.headers?.['retry-after']) : NaN;
+      const waitMs = Number.isFinite(retryAfter) && retryAfter > 0 ? Math.min(retryAfter * 1000, 5_000) : delays[attempt];
+      await new Promise((r) => setTimeout(r, waitMs));
+    }
+  }
+}
+
 export async function uploadImage(file: File): Promise<string> {
   if (file.size > MAX_BYTES) {
     throw new Error('Image must be 5MB or smaller');
@@ -63,13 +80,11 @@ export async function uploadImage(file: File): Promise<string> {
   const form = new FormData();
   form.append('file', file);
 
-  const { data } = await axios.post<{ IpfsHash: string }>(
-    '/api/pinata/file',
-    form,
-    {
+  const { data } = await postWithRetry(async () =>
+    axios.post<{ IpfsHash: string }>('/api/pinata/file', form, {
       headers: getApiProxyHeaders({ 'Content-Type': 'multipart/form-data', ...(await getUploadAuthHeaders()) }),
       timeout: PINATA_UPLOAD_TIMEOUT_MS,
-    },
+    }),
   );
   if (!data?.IpfsHash) {
     throw new Error('Pinata did not return IpfsHash');
@@ -78,13 +93,15 @@ export async function uploadImage(file: File): Promise<string> {
 }
 
 export async function uploadMetadata(json: TokenMetadataJson): Promise<string> {
-  const { data } = await axios.post<{ IpfsHash: string }>(
-    '/api/pinata/json',
-    { pinataContent: json, pinataMetadata: { name: `${json.symbol}-metadata` } },
-    {
-      headers: getApiProxyHeaders({ 'Content-Type': 'application/json', ...(await getUploadAuthHeaders()) }),
-      timeout: PINATA_UPLOAD_TIMEOUT_MS,
-    },
+  const { data } = await postWithRetry(async () =>
+    axios.post<{ IpfsHash: string }>(
+      '/api/pinata/json',
+      { pinataContent: json, pinataMetadata: { name: `${json.symbol}-metadata` } },
+      {
+        headers: getApiProxyHeaders({ 'Content-Type': 'application/json', ...(await getUploadAuthHeaders()) }),
+        timeout: PINATA_UPLOAD_TIMEOUT_MS,
+      },
+    ),
   );
   if (!data?.IpfsHash) {
     throw new Error('Pinata did not return IpfsHash');
